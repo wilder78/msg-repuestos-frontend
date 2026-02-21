@@ -1,33 +1,83 @@
-import { ShoppingCart, User, Menu, X } from "lucide-react";
+import React from "react";
+import { ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth";
 
-// Cambiamos setIsMenuOpen por toggleMenu para que coincida con tu Navbar.jsx
-export const NavActions = ({ isMenuOpen, toggleMenu }) => (
-  <div className="flex items-center space-x-2">
-    {/* Carrito con indicador */}
-    <button className="relative p-2.5 text-gray-700 hover:bg-blue-50 rounded-full transition-all group">
-      <ShoppingCart className="w-5 h-5 group-hover:text-blue-600" />
-      <span className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md animate-pulse">
-        0
-      </span>
-    </button>
+const links = [
+  { href: "/", label: "Inicio" },
+  { href: "/productos", label: "Productos" },
+  { href: "/nosotros", label: "Nosotros" },
+  { href: "/contacto", label: "Contacto" },
+];
 
-    {/* Botón de Login (Oculto en móviles muy pequeños) */}
-    <button className="hidden sm:flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-md active:scale-95 group">
-      <User className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-      <span className="text-sm">Iniciar Sesión</span>
-    </button>
+export const NavLinks = () => {
+  return (
+    <div className="hidden lg:flex items-center space-x-1">
+      {links.map((link) => {
+        return (
+          /* CORRECCIÓN: Se añadió la etiqueta de apertura <a> que faltaba */
+          <a
+            key={link.href}
+            href={link.href}
+            className="relative px-3 py-2 text-gray-600 hover:text-blue-600 font-medium transition-colors group text-sm"
+          >
+            {link.label}
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
+          </a>
+        );
+      })}
+    </div>
+  );
+};
 
-    {/* Botón Hamburguesa / X */}
-    <button
-      onClick={toggleMenu} // Usamos la función toggleMenu que viene del Hook
-      className="md:hidden p-2.5 text-gray-700 hover:bg-blue-50 rounded-xl transition-all active:scale-90"
-      aria-label="Abrir menú"
-    >
-      {isMenuOpen ? (
-        <X className="w-5 h-5 text-blue-600" />
+export const NavActions = ({ isMenuOpen, toggleMenu, toggleLogin }) => {
+  const { user, logout, isAuthenticated } = useAuth();
+
+  return (
+    <div className="flex items-center gap-1 sm:gap-2">
+      {/* Carrito */}
+      <button className="relative p-2 text-gray-700 hover:bg-blue-50 rounded-full transition-all">
+        <ShoppingCart className="w-5 h-5" />
+        <span className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-1 py-0.5 rounded-full shadow-sm">
+          0
+        </span>
+      </button>
+
+      {/* Autenticación */}
+      {!isAuthenticated ? (
+        <button
+          onClick={toggleLogin}
+          className="p-2 text-gray-700 hover:bg-blue-50 rounded-xl transition-all"
+          title="Iniciar Sesión"
+        >
+          <User className="w-5 h-5" />
+        </button>
       ) : (
-        <Menu className="w-5 h-5" />
+        <div className="flex items-center gap-1">
+          <span className="hidden lg:inline-block text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded-lg">
+            {user?.nombre}
+          </span>
+          <button
+            onClick={logout}
+            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+            title="Cerrar Sesión"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       )}
-    </button>
-  </div>
-);
+
+      {/* Botón Hamburguesa: Se asegura visibilidad con flex-shrink-0 */}
+      <button
+        onClick={toggleMenu}
+        className="md:hidden p-2 text-gray-700 hover:bg-blue-50 rounded-xl transition-all flex-shrink-0"
+        aria-label="Abrir menú"
+      >
+        {isMenuOpen ? (
+          <X className="w-6 h-6 text-blue-600" />
+        ) : (
+          <Menu className="w-6 h-6" />
+        )}
+      </button>
+    </div>
+  );
+};
