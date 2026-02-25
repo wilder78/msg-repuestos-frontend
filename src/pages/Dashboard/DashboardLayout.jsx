@@ -1,51 +1,86 @@
-import React from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import React, { useState } from "react";
+import { Sidebar } from "../../components/Navbar/Sidebar";
+import { AdminNavbar } from "../../components/Navbar/AdminNavbar";
+import { cn } from "../../lib/utils";
 
-export const DashboardLayout = () => {
-  const { user, logout } = useAuth();
+export default function DashboardLayout({ children }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar Temporal */}
-      <aside className="w-64 bg-slate-900 text-white p-6 hidden md:block">
-        <h1 className="text-2xl font-bold mb-8">MSG Panel</h1>
-        <nav className="space-y-4">
-          <div className="p-3 bg-blue-600 rounded-lg cursor-pointer">Inicio</div>
-          <div className="p-3 hover:bg-slate-800 rounded-lg cursor-pointer">Inventario</div>
-          <div className="p-3 hover:bg-slate-800 rounded-lg cursor-pointer">Ventas</div>
-        </nav>
-      </aside>
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50">
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <Sidebar className="h-full" />
+      </div>
 
-      {/* Contenido Principal */}
-      <main className="flex-1 flex flex-col">
-        <header className="h-16 bg-white border-b flex items-center justify-between px-8">
-          <span className="font-medium text-gray-600">Bienvenido, {user?.name || 'Empleado'}</span>
-          <button 
-            onClick={logout}
-            className="text-red-500 hover:text-red-700 font-medium"
-          >
-            Cerrar Sesión
-          </button>
-        </header>
-        
-        <div className="p-8">
-          <h2 className="text-2xl font-semibold text-gray-800">Resumen del Sistema</h2>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <p className="text-gray-500 text-sm">Ventas hoy</p>
-              <p className="text-3xl font-bold">$1,250,000</p>
-            </div>
-            <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <p className="text-gray-500 text-sm">Repuestos bajos</p>
-              <p className="text-3xl font-bold text-orange-500">12</p>
-            </div>
-            <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-              <p className="text-gray-500 text-sm">Pedidos pendientes</p>
-              <p className="text-3xl font-bold text-blue-500">5</p>
-            </div>
-          </div>
-        </div>
-      </main>
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
+
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <AdminNavbar onToggleSidebar={toggleSidebar} />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+      </div>
     </div>
   );
-};
+}
+
+// import React, { useState } from "react";
+// import { Sidebar } from "../../components/Navbar/Sidebar";
+// import { AdminNavbar } from "../../components/Navbar/AdminNavbar";
+// import { cn } from "../../lib/utils";
+
+// export default function DashboardLayout({ children }) {
+//   // Estado para controlar el Sidebar en móviles
+//   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+//   const toggleSidebar = () => {
+//     setIsSidebarOpen(!isSidebarOpen);
+//   };
+
+//   return (
+//     <div className="flex h-screen w-full overflow-hidden bg-slate-50">
+//       {/* 1. SIDEBAR: Fijo en escritorio, toggle en móvil */}
+//       <div
+//         className={cn(
+//           "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0",
+//           isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+//         )}
+//       >
+//         <Sidebar className="h-full" />
+//       </div>
+
+//       {/* 2. OVERLAY: Para cerrar el sidebar al tocar fuera en móviles */}
+//       {isSidebarOpen && (
+//         <div
+//           className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+//           onClick={toggleSidebar}
+//         />
+//       )}
+
+//       {/* 3. CONTENEDOR PRINCIPAL */}
+//       <div className="flex flex-1 flex-col overflow-hidden">
+//         {/* Navbar de Administración */}
+//         <AdminNavbar onToggleSidebar={toggleSidebar} />
+
+//         {/* ÁREA DE CONTENIDO: Aquí se renderizarán los gráficos y tablas */}
+//         <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8">
+//           <div className="mx-auto max-w-7xl">{children}</div>
+//         </main>
+//       </div>
+//     </div>
+//   );
+// }

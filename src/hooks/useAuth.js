@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
-  // AGREGAMOS ESTADO DE CARGA INICIAL EN TRUE
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -10,7 +9,6 @@ export function useAuth() {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
-    // IMPORTANTE: Una vez que revisamos el localStorage, dejamos de cargar
     setLoading(false);
   }, []);
 
@@ -21,7 +19,6 @@ export function useAuth() {
     window.location.reload();
   };
 
-  // RETORNAMOS TAMBIÉN EL ESTADO LOADING
   return { user, logout, loading, isAuthenticated: !!user };
 }
 

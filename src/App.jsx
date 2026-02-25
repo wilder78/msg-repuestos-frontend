@@ -1,38 +1,63 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
-// 1. Verificación de ruta para Home (Asegúrate de que la extensión sea .jsx)
+import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
+import DashboardLayout from "./pages/Dashboard/DashboardLayout";
+import DashboardContent from "./pages/Dashboard/DashboardContent";
 
-// 2. Verificación de ruta para ProtectedRoute
-import { ProtectedRoute } from "./components/ProtectedRoute";
-
-// 3. Verificación de DashboardLayout (Importación nombrada con llaves)
-import { DashboardLayout } from "./pages/Dashboard/DashboardLayout";
-
-function App() {
+export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Ruta principal pública */}
-        <Route path="/" element={<Home />} />
-
-        {/* Ruta protegida para empleados (idRol !== 7) */}
-        <Route
-          path="/dashboard/*"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Redirección automática si la ruta no existe */}
-        {/* Requiere que 'Navigate' esté importado de react-router-dom */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route
+        path="/dashboard"
+        element={
+          <DashboardLayout>
+            <DashboardContent />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="*"
+        element={<div className="p-10">404 - Página no encontrada</div>}
+      />
+    </Routes>
   );
 }
 
-export default App;
+// import React from "react";
+// import { Routes, Route } from "react-router-dom";
+
+// // Páginas e Interfaces
+// import Home from "./pages/Home"; // Asegúrate de que este archivo exista
+// import DashboardLayout from "./pages/Dashboard/DashboardLayout";
+// import DashboardContent from "./pages/Dashboard/DashboardContent";
+
+// /**
+//  * 1. Agregamos "export default" para que main.jsx pueda reconocerlo.
+//  * 2. Importamos Routes y Route desde 'react-router-dom'.
+//  * 3. Aseguramos que el componente Home esté importado.
+//  */
+// export default function App() {
+//   return (
+//     <Routes>
+//       {/* Ruta pública para clientes */}
+//       <Route path="/" element={<Home />} />
+
+//       {/* Rutas administrativas protegidas por el Layout */}
+//       <Route
+//         path="/dashboard"
+//         element={
+//           <DashboardLayout>
+//             <DashboardContent />
+//           </DashboardLayout>
+//         }
+//       />
+
+//       {/* Ruta de respaldo (404) por si escribes mal la URL */}
+//       <Route
+//         path="*"
+//         element={<div className="p-10">404 - Página no encontrada</div>}
+//       />
+//     </Routes>
+//   );
+// }
