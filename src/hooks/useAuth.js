@@ -2,21 +2,48 @@ import { useState, useEffect } from "react";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
+  // AGREGAMOS ESTADO DE CARGA INICIAL EN TRUE
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Leemos el usuario guardado en el localStorage
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+    // IMPORTANTE: Una vez que revisamos el localStorage, dejamos de cargar
+    setLoading(false);
   }, []);
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    window.location.reload(); // Recargamos para limpiar la interfaz
+    window.location.reload();
   };
 
-  return { user, logout, isAuthenticated: !!user };
+  // RETORNAMOS TAMBIÉN EL ESTADO LOADING
+  return { user, logout, loading, isAuthenticated: !!user };
 }
+
+// import { useState, useEffect } from "react";
+
+// export function useAuth() {
+//   const [user, setUser] = useState(null);
+
+//   useEffect(() => {
+//     // Leemos el usuario guardado en el localStorage
+//     const savedUser = localStorage.getItem("user");
+//     if (savedUser) {
+//       setUser(JSON.parse(savedUser));
+//     }
+//   }, []);
+
+//   const logout = () => {
+//     localStorage.removeItem("token");
+//     localStorage.removeItem("user");
+//     setUser(null);
+//     window.location.reload(); // Recargamos para limpiar la interfaz
+//   };
+
+//   return { user, logout, isAuthenticated: !!user };
+// }
