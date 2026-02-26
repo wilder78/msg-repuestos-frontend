@@ -3,11 +3,16 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 import DashboardContent from "./pages/Dashboard/DashboardContent";
+import CustomersPage from "./pages/Customers/CustomersPage";
+// Importamos la nueva página de Empleados
+import GestionEmpleados from "./pages/Employees/GestionEmpleados";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+
+      {/* Vista principal del Dashboard */}
       <Route
         path="/dashboard"
         element={
@@ -16,9 +21,34 @@ export default function App() {
           </DashboardLayout>
         }
       />
+
+      {/* Gestión de Clientes */}
+      <Route
+        path="/customers"
+        element={
+          <DashboardLayout>
+            <CustomersPage />
+          </DashboardLayout>
+        }
+      />
+
+      {/* NUEVA RUTA: Gestión de Empleados */}
+      <Route
+        path="/employees"
+        element={
+          <DashboardLayout>
+            <GestionEmpleados />
+          </DashboardLayout>
+        }
+      />
+
       <Route
         path="*"
-        element={<div className="p-10">404 - Página no encontrada</div>}
+        element={
+          <div className="p-10 text-center font-bold">
+            404 - Página no encontrada
+          </div>
+        }
       />
     </Routes>
   );
@@ -26,24 +56,18 @@ export default function App() {
 
 // import React from "react";
 // import { Routes, Route } from "react-router-dom";
-
-// // Páginas e Interfaces
-// import Home from "./pages/Home"; // Asegúrate de que este archivo exista
+// import Home from "./pages/Home";
 // import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 // import DashboardContent from "./pages/Dashboard/DashboardContent";
+// // Importamos la nueva página de Clientes
+// import CustomersPage from "./pages/Customers/CustomersPage";
 
-// /**
-//  * 1. Agregamos "export default" para que main.jsx pueda reconocerlo.
-//  * 2. Importamos Routes y Route desde 'react-router-dom'.
-//  * 3. Aseguramos que el componente Home esté importado.
-//  */
 // export default function App() {
 //   return (
 //     <Routes>
-//       {/* Ruta pública para clientes */}
 //       <Route path="/" element={<Home />} />
 
-//       {/* Rutas administrativas protegidas por el Layout */}
+//       {/* Vista principal del Dashboard */}
 //       <Route
 //         path="/dashboard"
 //         element={
@@ -53,7 +77,16 @@ export default function App() {
 //         }
 //       />
 
-//       {/* Ruta de respaldo (404) por si escribes mal la URL */}
+//       {/* NUEVA RUTA: Gestión de Clientes */}
+//       <Route
+//         path="/customers"
+//         element={
+//           <DashboardLayout>
+//             <CustomersPage />
+//           </DashboardLayout>
+//         }
+//       />
+
 //       <Route
 //         path="*"
 //         element={<div className="p-10">404 - Página no encontrada</div>}
