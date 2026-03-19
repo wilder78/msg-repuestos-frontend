@@ -5,7 +5,6 @@ import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 import DashboardContent from "./pages/Dashboard/DashboardContent";
 import CustomersPage from "./pages/Customers/CustomersPage";
 // Importamos la nueva página de Empleados
-import GestionEmpleados from "./pages/Employees/GestionEmpleados";
 
 export default function App() {
   return (
@@ -21,27 +20,7 @@ export default function App() {
           </DashboardLayout>
         }
       />
-
-      {/* Gestión de Clientes */}
-      <Route
-        path="/customers"
-        element={
-          <DashboardLayout>
-            <CustomersPage />
-          </DashboardLayout>
-        }
-      />
-
-      {/* NUEVA RUTA: Gestión de Empleados */}
-      <Route
-        path="/employees"
-        element={
-          <DashboardLayout>
-            <GestionEmpleados />
-          </DashboardLayout>
-        }
-      />
-
+      
       <Route
         path="*"
         element={
