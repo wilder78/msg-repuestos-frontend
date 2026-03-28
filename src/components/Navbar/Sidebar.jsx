@@ -90,7 +90,11 @@ const navigation = [
   {
     title: "Configuración",
     items: [
-      { icon: UserPlus, label: "Gestión de Usuarios", href: "/api/users" },
+      {
+        icon: UserPlus,
+        label: "Gestión de Usuarios",
+        href: "/dashboard/usuarios",
+      },
       { icon: ShieldCheck, label: "Roles y Permisos", href: "/roles" },
     ],
   },
