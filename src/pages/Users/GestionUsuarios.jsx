@@ -14,19 +14,19 @@ import {
   Eye,
   Edit2,
   Loader2,
-  AlertCircle,
   Search,
   ChevronLeft,
   ChevronRight,
-  Mail,
   Trash2,
+  Mail,
 } from "lucide-react";
 
 import EstadoBadge from "./components/EstadoBadge";
 import UserDetailsModal from "./components/UserDetailsModal";
 import UserEditModal from "./components/UserEditModal";
+import UserDeleteModal from "./components/UserDeleteModal";
 
-// Helpers permanecen igual
+// ─── Helpers de autenticacion ────────────────────────────────────────────────
 const getAuthToken = () =>
   localStorage.getItem("token") || sessionStorage.getItem("token") || null;
 
@@ -41,21 +41,28 @@ const authFetch = (url, options = {}) => {
     },
   });
 };
+// ─────────────────────────────────────────────────────────────────────────────
 
 const GestionUsuarios = () => {
+  // ─── Estado global ──────────────────────────────────────────────────────────
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
   const [rolMap, setRolMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [editLoading, setEditLoading] = useState(false);
   const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState("");
-  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const usuariosPorPagina = 8;
 
+  // ─── Estado de modales ──────────────────────────────────────────────────────
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // ─── Estado del formulario de edicion ──────────────────────────────────────
   const [formData, setFormData] = useState({
     nombreUsuario: "",
     email: "",
@@ -63,6 +70,7 @@ const GestionUsuarios = () => {
     idEstado: "1",
   });
 
+  // ─── Carga inicial de datos ─────────────────────────────────────────────────
   const fetchDatos = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -75,7 +83,7 @@ const GestionUsuarios = () => {
       if (!resUsuarios.ok || !resRoles.ok) {
         const status = !resUsuarios.ok ? resUsuarios.status : resRoles.status;
         throw new Error(
-          status === 401 ? "Sesión expirada" : `Error: ${status}`,
+          status === 401 ? "Sesion expirada" : `Error: ${status}`,
         );
       }
 
@@ -108,26 +116,18 @@ const GestionUsuarios = () => {
     fetchDatos();
   }, [fetchDatos]);
 
-  // --- NUEVA FUNCIÓN PARA CAMBIAR ESTADO ---
+  // ─── Cambiar estado activo/inactivo ────────────────────────────────────────
   const handleToggleEstado = async (u) => {
-    // Si 1 es Activo y 2 es Inactivo, invertimos el valor
     const nuevoEstadoId = u.idEstado === 1 ? 2 : 1;
-    const nuevoEstadoTexto = nuevoEstadoId === 1 ? "ACTIVO" : "INACTIVO";
-
     try {
       const response = await authFetch(
         `http://localhost:8080/api/users/${u.idUsuario}`,
         {
           method: "PUT",
-          body: JSON.stringify({
-            ...u, // Mantenemos los datos actuales
-            idEstado: nuevoEstadoId, // Solo sobreescribimos el estado
-          }),
+          body: JSON.stringify({ ...u, idEstado: nuevoEstadoId }),
         },
       );
-
       if (response.ok) {
-        // Actualización optimista: cambiamos el estado en el array local sin recargar la API
         setUsuarios((prev) =>
           prev.map((user) =>
             user.idUsuario === u.idUsuario
@@ -140,39 +140,11 @@ const GestionUsuarios = () => {
       }
     } catch (error) {
       console.error("Error toggle estado:", error);
-      alert("Error de conexión al intentar cambiar el estado.");
+      alert("Error de conexion al intentar cambiar el estado.");
     }
   };
 
-  // Lógica de UI (Initials, Colors, styles) se mantiene igual
-  const getInitials = (name) => {
-    if (!name) return "??";
-    const words = name.trim().split(/\s+/);
-    return words.length >= 2
-      ? (words[0][0] + words[1][0]).toUpperCase()
-      : words[0].slice(0, 2).toUpperCase();
-  };
-
-  const getAvatarColor = (id) => {
-    const colors = [
-      "bg-emerald-500",
-      "bg-blue-500",
-      "bg-violet-500",
-      "bg-amber-500",
-      "bg-rose-500",
-    ];
-    return colors[id % colors.length];
-  };
-
-  const getCargoStyle = (id) => {
-    const styles = {
-      1: "bg-red-50 text-red-700",
-      2: "bg-blue-50 text-blue-700",
-      3: "bg-amber-50 text-amber-700",
-    };
-    return styles[id] || "bg-gray-50 text-gray-600";
-  };
-
+  // ─── Abrir modal de edicion ─────────────────────────────────────────────────
   const handleEditClick = (usuario) => {
     setUsuarioSeleccionado(usuario);
     setFormData({
@@ -184,15 +156,15 @@ const GestionUsuarios = () => {
     setIsEditDialogOpen(true);
   };
 
+  // ─── Guardar edicion ────────────────────────────────────────────────────────
   const handleSubmitEdit = async () => {
     setEditLoading(true);
     try {
       const token = localStorage.getItem("token");
-
       const payload = {
         nombreUsuario: formData.nombreUsuario,
         email: formData.email,
-        idRol: parseInt(formData.id_rol), // <- idRol (no id_rol) para el backend
+        idRol: parseInt(formData.id_rol),
         idEstado: parseInt(formData.idEstado),
       };
 
@@ -209,7 +181,7 @@ const GestionUsuarios = () => {
       );
 
       if (response.ok) {
-        // Actualiza la lista local sin recargar toda la API
+        // Actualiza la tabla localmente sin recargar la API
         setUsuarios((prev) =>
           prev.map((u) =>
             u.idUsuario === usuarioSeleccionado.idUsuario
@@ -238,7 +210,75 @@ const GestionUsuarios = () => {
     }
   };
 
-  // Filtros y Paginación
+  // ─── Confirmar eliminacion ──────────────────────────────────────────────────
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+
+      // El backend hace borrado logico: cambia idEstado a 2 (Inactivo)
+      const response = await fetch(
+        `http://localhost:8080/api/users/${usuarioSeleccionado.idUsuario}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (response.ok) {
+        // Refleja el borrado logico: marca el usuario como Inactivo (idEstado: 2)
+        setUsuarios((prev) =>
+          prev.map((u) =>
+            u.idUsuario === usuarioSeleccionado.idUsuario
+              ? { ...u, idEstado: 2 }
+              : u,
+          ),
+        );
+        setIsDeleteDialogOpen(false);
+      } else {
+        const err = await response.json().catch(() => ({}));
+        alert(
+          `No se pudo desactivar el usuario: ${err.error || response.status}`,
+        );
+      }
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      alert("Error de conexion al intentar eliminar.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // ─── Helpers de UI ──────────────────────────────────────────────────────────
+  const getInitials = (name) => {
+    if (!name) return "??";
+    const words = name.trim().split(/\s+/);
+    return words.length >= 2
+      ? (words[0][0] + words[1][0]).toUpperCase()
+      : words[0].slice(0, 2).toUpperCase();
+  };
+
+  const getAvatarColor = (id) => {
+    const colors = [
+      "bg-emerald-500",
+      "bg-blue-500",
+      "bg-violet-500",
+      "bg-amber-500",
+      "bg-rose-500",
+    ];
+    return colors[id % colors.length];
+  };
+
+  const getCargoStyle = (id) => {
+    const styles = {
+      1: "bg-red-50 text-red-700",
+      2: "bg-blue-50 text-blue-700",
+      3: "bg-amber-50 text-amber-700",
+    };
+    return styles[id] || "bg-gray-50 text-gray-600";
+  };
+
+  // ─── Filtros y paginacion ───────────────────────────────────────────────────
   const usuariosFiltrados = usuarios.filter(
     (u) =>
       (u.nombreUsuario?.toLowerCase() || "").includes(busqueda.toLowerCase()) ||
@@ -253,13 +293,15 @@ const GestionUsuarios = () => {
   );
   const totalPaginas = Math.ceil(usuariosFiltrados.length / usuariosPorPagina);
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
+      {/* Encabezado */}
       <div className="px-8 py-6 bg-white border-b">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">
-              Gestión de Usuarios
+              Gestion de Usuarios
             </h1>
             <p className="text-slate-500 text-sm">
               Panel administrativo MSG Repuestos
@@ -271,8 +313,10 @@ const GestionUsuarios = () => {
         </div>
       </div>
 
+      {/* Tabla */}
       <div className="flex-1 p-8 overflow-auto">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          {/* Buscador */}
           <div className="p-4 border-b">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -303,6 +347,15 @@ const GestionUsuarios = () => {
                     <Loader2 className="animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-10 text-red-500"
+                  >
+                    {error}
+                  </TableCell>
+                </TableRow>
               ) : (
                 usuariosPaginados.map((u) => (
                   <TableRow key={u.idUsuario} className="group">
@@ -329,10 +382,11 @@ const GestionUsuarios = () => {
                       </span>
                     </TableCell>
                     <TableCell className="text-slate-600 text-sm">
-                      {u.email}
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        {u.email}
+                      </div>
                     </TableCell>
-
-                    {/* CELDA MODIFICADA: Ahora el badge es un botón interactivo */}
                     <TableCell>
                       <button
                         onClick={() => handleToggleEstado(u)}
@@ -342,9 +396,9 @@ const GestionUsuarios = () => {
                         <EstadoBadge usuario={u} size="small" />
                       </button>
                     </TableCell>
-
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end gap-1">
+                        {/* Ver detalles */}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -356,6 +410,7 @@ const GestionUsuarios = () => {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                        {/* Editar */}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -364,10 +419,15 @@ const GestionUsuarios = () => {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
+                        {/* Eliminar */}
                         <Button
                           variant="ghost"
                           size="icon"
                           className="text-red-600"
+                          onClick={() => {
+                            setUsuarioSeleccionado(u);
+                            setIsDeleteDialogOpen(true);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -379,10 +439,10 @@ const GestionUsuarios = () => {
             </TableBody>
           </Table>
 
-          {/* Paginación simple */}
+          {/* Paginacion */}
           <div className="p-4 border-t flex justify-between items-center">
             <span className="text-sm text-slate-500">
-              Página {paginaActual} de {totalPaginas}
+              Pagina {paginaActual} de {totalPaginas}
             </span>
             <div className="flex gap-2">
               <Button
@@ -408,6 +468,7 @@ const GestionUsuarios = () => {
         </div>
       </div>
 
+      {/* Modales */}
       <UserDetailsModal
         isOpen={isViewDialogOpen}
         onClose={() => setIsViewDialogOpen(false)}
@@ -432,6 +493,13 @@ const GestionUsuarios = () => {
         loading={editLoading}
         getAvatarColor={getAvatarColor}
         getInitials={getInitials}
+      />
+      <UserDeleteModal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        usuario={usuarioSeleccionado}
+        onConfirm={handleDeleteConfirm}
+        loading={deleteLoading}
       />
     </div>
   );
