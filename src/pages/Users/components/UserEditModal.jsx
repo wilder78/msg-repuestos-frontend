@@ -194,32 +194,6 @@ const UserEditModal = ({
                   </SelectContent>
                 </Select>
               </InfoCard>
-
-              {/* Campo: Estado - CORREGIDO: usar 0 para inactivo */}
-              <InfoCard icon={Power} iconColor="amber" title="Estado de cuenta">
-                <Select
-                  value={formData.idEstado?.toString() || "1"}
-                  onValueChange={(value) => onSelectChange("idEstado", value)}
-                >
-                  <SelectTrigger className="w-full bg-white">
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                        <span>Activo</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="0">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-slate-400"></div>
-                        <span>Inactivo</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </InfoCard>
             </div>
 
             {/* Mensaje informativo - MISMO ESTILO QUE VER DETALLES */}
