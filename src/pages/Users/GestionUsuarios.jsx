@@ -1,31 +1,4 @@
-import React, { useState, useEffect } from "react";
-import {
-  Search,
-  UserPlus,
-  Edit2,
-  Trash2,
-  Eye,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  Mail,
-  User,
-  ShieldCheck,
-  Calendar,
-  Fingerprint,
-  Clock,
-  Activity,
-  X,
-  CheckCircle,
-  AlertCircle,
-  MapPin,
-  Briefcase,
-  Award,
-  Smartphone,
-} from "lucide-react";
-
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -34,143 +7,120 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "../../components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../../components/ui/dialog";
-import { Label } from "../../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import { toast } from "sonner";
-import { Separator } from "../../components/ui/separator";
+  Plus,
+  Eye,
+  Edit2,
+  Loader2,
+  AlertCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+  User,
+  Trash2,
+} from "lucide-react";
 
-// ── Badge de estado con tooltip mejorado ──────────────────
-const EstadoBadge = ({ usuario, onToggle, size = "default" }) => {
-  const [hovered, setHovered] = useState(false);
-  const isActivo = usuario.idEstado === 1;
+import EstadoBadge from "./components/EstadoBadge";
+import UserDetailsModal from "./components/UserDetailsModal";
+import UserEditModal from "./components/UserEditModal";
 
-  const sizeClasses = {
-    small: "px-2 py-0.5 text-xs",
-    default: "px-3 py-0.5 text-sm",
-    large: "px-4 py-1 text-base",
-  };
-
+// Helper para obtener el token
+const getAuthToken = () => {
   return (
-    <div className="relative inline-flex flex-col items-start">
-      <Badge
-        onClick={() => onToggle && onToggle(usuario)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className={`
-          cursor-pointer select-none rounded-full border transition-all duration-200 font-medium
-          ${sizeClasses[size]}
-          ${
-            isActivo
-              ? hovered
-                ? "bg-white text-emerald-700 border-emerald-700 shadow-md ring-2 ring-emerald-700/20"
-                : "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm"
-              : hovered
-                ? "bg-white text-slate-600 border-slate-500 shadow-md ring-2 ring-slate-500/20"
-                : "bg-slate-100 text-slate-500 border-slate-200 shadow-sm"
-          }
-        `}
-      >
-        {isActivo ? (
-          <div className="flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" />
-            <span>Activo</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" />
-            <span>Inactivo</span>
-          </div>
-        )}
-      </Badge>
-    </div>
+    localStorage.getItem("token") || sessionStorage.getItem("token") || null
   );
 };
 
-// ── Tarjeta de información reutilizable ──────────────────
-const InfoCard = ({ icon: Icon, iconColor, title, children, bgColor }) => {
-  const colorVariants = {
-    blue: "border-blue-100 bg-blue-50/30 text-blue-700",
-    emerald: "border-emerald-100 bg-emerald-50/30 text-emerald-700",
-    violet: "border-violet-100 bg-violet-50/30 text-violet-700",
-    amber: "border-amber-100 bg-amber-50/30 text-amber-700",
-    slate: "border-slate-200 bg-white text-slate-500",
-    rose: "border-rose-100 bg-rose-50/30 text-rose-700",
-  };
-
-  const iconColorVariants = {
-    blue: "text-blue-700",
-    emerald: "text-emerald-700",
-    violet: "text-violet-700",
-    amber: "text-amber-700",
-    slate: "text-slate-500",
-    rose: "text-rose-700",
-  };
-
-  return (
-    <div
-      className={`p-4 rounded-xl border ${colorVariants[iconColor]} space-y-3 transition-all hover:shadow-md`}
-    >
-      <div className="flex items-center gap-2">
-        <Icon className={`h-4 w-4 ${iconColorVariants[iconColor]}`} />
-        <span className="text-[11px] font-bold uppercase tracking-wider">
-          {title}
-        </span>
-      </div>
-      {children}
-    </div>
-  );
+// Helper centralizado para fetch autenticado
+const authFetch = (url, options = {}) => {
+  const token = getAuthToken();
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
 };
 
-// ── Componente principal ──────────────────────────────────────────────────────
 const GestionUsuarios = () => {
-  const [listaUsuarios, setListaUsuarios] = useState([]);
-  const [listaRoles, setListaRoles] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [rolMap, setRolMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [editLoading, setEditLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-
-  // ESTADOS PARA "VER DETALLES"
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
-
-  const [estadoFiltro, setEstadoFiltro] = useState("todos");
-  const [cargoFiltro, setCargoFiltro] = useState("todos");
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
   const usuariosPorPagina = 8;
 
-  const [nuevoUsuario, setNuevoUsuario] = useState({
+  const [formData, setFormData] = useState({
     nombreUsuario: "",
     email: "",
     id_rol: "",
-    password: "",
+    idEstado: "1",
   });
 
-  // Funciones de utilidad para estilos
-  const getInitials = (n) => {
-    if (!n) return "??";
-    const words = n.trim().split(/\s+/);
+  const fetchDatos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [resUsuarios, resRoles] = await Promise.all([
+        authFetch("http://localhost:8080/api/users"),
+        authFetch("http://localhost:8080/api/roles"),
+      ]);
+
+      if (!resUsuarios.ok || !resRoles.ok) {
+        const status = !resUsuarios.ok ? resUsuarios.status : resRoles.status;
+        if (status === 401)
+          throw new Error("No autenticado. Por favor inicia sesión.");
+        if (status === 403)
+          throw new Error("No tienes permisos para ver este recurso (403).");
+        throw new Error(`Error del servidor: ${status}`);
+      }
+
+      const dataUsuarios = await resUsuarios.json();
+      const dataRoles = await resRoles.json();
+
+      // Extraer listas correctamente con manejo de estructura anidada
+      const listaUsuarios =
+        dataUsuarios.data ||
+        dataUsuarios.usuarios ||
+        dataUsuarios.content ||
+        [];
+      const listaRoles = dataRoles.data || dataRoles.roles || dataRoles || [];
+
+      setUsuarios(listaUsuarios);
+      setRoles(listaRoles);
+
+      // Crear rolMap para mostrar nombres de roles
+      const map = {};
+      listaRoles.forEach((rol) => {
+        map[rol.idRol] = rol.nombreRol;
+      });
+      setRolMap(map);
+    } catch (err) {
+      console.error("Error detallado:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDatos();
+  }, [fetchDatos]);
+
+  const getInitials = (name) => {
+    if (!name) return "??";
+    const words = name.trim().split(/\s+/);
     if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
     return words[0].slice(0, 2).toUpperCase();
   };
@@ -183,7 +133,10 @@ const GestionUsuarios = () => {
       "bg-gradient-to-br from-amber-500 to-amber-600",
       "bg-gradient-to-br from-rose-500 to-rose-600",
     ];
-    return colors[id % colors.length];
+    return (
+      colors[id % colors.length] ||
+      "bg-gradient-to-br from-slate-500 to-slate-600"
+    );
   };
 
   const getCargoStyle = (id) => {
@@ -196,35 +149,77 @@ const GestionUsuarios = () => {
     return styles[id] || "bg-gray-50 text-gray-600";
   };
 
-  // Handlers
-  const handleVerDetalles = (usuario) => {
+  const handleEditClick = (usuario) => {
     setUsuarioSeleccionado(usuario);
-    setIsViewDialogOpen(true);
+    setFormData({
+      nombreUsuario: usuario.nombreUsuario || "",
+      email: usuario.email || "",
+      id_rol: usuario.id_rol?.toString() || "",
+      idEstado: usuario.idEstado?.toString() || "1",
+    });
+    setIsEditDialogOpen(true);
   };
 
-  // Simulación de Fetch (Manteniendo tu lógica original)
-  const fetchUsuarios = async () => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitEdit = async () => {
+    if (!formData.nombreUsuario.trim()) {
+      alert("El nombre de usuario es requerido");
+      return;
+    }
+    if (!formData.email.trim()) {
+      alert("El email es requerido");
+      return;
+    }
+    if (!formData.id_rol) {
+      alert("El rol es requerido");
+      return;
+    }
+
+    setEditLoading(true);
     try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8080/api/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      setListaUsuarios(data.data || []);
+      const updateData = {
+        nombreUsuario: formData.nombreUsuario,
+        email: formData.email,
+        id_rol: parseInt(formData.id_rol),
+        idEstado: parseInt(formData.idEstado),
+      };
+
+      const response = await authFetch(
+        `http://localhost:8080/api/users/${usuarioSeleccionado.idUsuario}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(updateData),
+        },
+      );
+
+      if (response.ok) {
+        alert("Usuario actualizado correctamente");
+        setIsEditDialogOpen(false);
+        fetchDatos();
+      } else {
+        const errText = await response.text().catch(() => "");
+        alert(
+          `Error al actualizar (${response.status}): ${errText || "sin detalles"}`,
+        );
+      }
     } catch (error) {
-      console.error("Error cargando usuarios");
+      console.error("Error al actualizar", error);
+      alert("Error de red al actualizar el usuario.");
     } finally {
-      setLoading(false);
+      setEditLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchUsuarios();
-    // fetchRoles(); // Asumimos que ya tienes esta lógica
-  }, []);
-
-  const usuariosFiltrados = listaUsuarios.filter((u) => {
+  // Filtrar usuarios por búsqueda
+  const usuariosFiltrados = usuarios.filter((u) => {
     const term = busqueda.toLowerCase();
     return (
       (u.nombreUsuario?.toLowerCase() || "").includes(term) ||
@@ -232,6 +227,7 @@ const GestionUsuarios = () => {
     );
   });
 
+  // Paginación
   const indexUltimoUsuario = paginaActual * usuariosPorPagina;
   const indexPrimerUsuario = indexUltimoUsuario - usuariosPorPagina;
   const usuariosPaginados = usuariosFiltrados.slice(
@@ -240,9 +236,17 @@ const GestionUsuarios = () => {
   );
   const totalPaginas = Math.ceil(usuariosFiltrados.length / usuariosPorPagina);
 
+  const getErrorMessage = (msg) => {
+    if (msg?.includes("401"))
+      return "Tu sesión expiró. Vuelve a iniciar sesión.";
+    if (msg?.includes("403"))
+      return "No tienes permisos para ver esta sección.";
+    return msg || "Error desconocido.";
+  };
+
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
-      {/* Header */}
+      {/* Header - ESTILO ORIGINAL */}
       <div className="px-8 py-6 bg-white border-b border-gray-200">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -254,358 +258,207 @@ const GestionUsuarios = () => {
             </p>
           </div>
           <Button className="bg-[#10b981] hover:bg-[#0da673] shadow-sm hover:shadow-md transition-all">
-            <UserPlus className="mr-2 h-4 w-4" /> Crear Usuario
+            <Plus className="mr-2 h-4 w-4" /> Crear Usuario
           </Button>
         </div>
       </div>
 
       <div className="flex-1 p-8 overflow-auto">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
-          {/* Tabla de Usuarios */}
-          <Table>
-            <TableHeader className="bg-gray-50/50">
-              <TableRow>
-                <TableHead className="pl-6 py-4 font-semibold">Foto</TableHead>
-                <TableHead className="font-semibold">Usuario</TableHead>
-                <TableHead className="font-semibold">Cargo</TableHead>
-                <TableHead className="font-semibold">Email</TableHead>
-                <TableHead className="font-semibold">Estado</TableHead>
-                <TableHead className="text-right pr-6 font-semibold">
-                  Acciones
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {usuariosPaginados.map((usuario) => (
-                <TableRow
-                  key={usuario.idUsuario}
-                  className="hover:bg-slate-50/80 transition-colors group"
-                >
-                  <TableCell className="pl-6 py-4">
-                    <Avatar className="h-11 w-11 shadow-sm ring-2 ring-white">
-                      <AvatarFallback
-                        className={`${getAvatarColor(usuario.idUsuario)} text-white font-bold shadow-inner`}
-                      >
-                        {getInitials(usuario.nombreUsuario)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-800">
-                        {usuario.nombreUsuario}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-mono">
-                        ID: {usuario.idUsuario}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`border-transparent ${getCargoStyle(usuario.id_rol)}`}
-                    >
-                      {rolMap[usuario.id_rol] || "Usuario"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-600 text-sm">
-                        {usuario.email}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <EstadoBadge usuario={usuario} size="small" />
-                  </TableCell>
-                  <TableCell className="text-right pr-6">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-blue-600 hover:bg-blue-50 hover:scale-110 transition-all"
-                        onClick={() => handleVerDetalles(usuario)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-amber-600 hover:bg-amber-50 hover:scale-110 transition-all"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-600 hover:bg-red-50 hover:scale-110 transition-all"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {/* Barra de búsqueda - AGREGADA */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Buscar por nombre o email..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="pl-10 max-w-md"
+              />
+            </div>
+          </div>
 
-          {/* ── MODAL VER DETALLES MEJORADO ── */}
-          {/* ── MODAL VER DETALLES MEJORADO ── */}
-          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogContent
-              className="sm:max-w-[580px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl"
-              style={{
-                backgroundColor: "white",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              }}
-            >
-              {/* El contenido de tu modal permanece igual */}
-
-              {/* Encabezado con gradiente sutil */}
-              <div className="relative bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-200">
-                <DialogHeader className="p-6 pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                        <User className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <DialogTitle className="text-2xl font-bold text-slate-900">
-                          Perfil de Usuario
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-500 text-sm mt-1">
-                          Información detallada del usuario y su actividad
-                        </DialogDescription>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full hover:bg-slate-100"
-                      onClick={() => setIsViewDialogOpen(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </DialogHeader>
-              </div>
-
-              {usuarioSeleccionado && (
-                <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
-                  {/* Sección de Perfil Principal - Estilo más elegante */}
-                  <div className="bg-gradient-to-br from-slate-50 to-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-5">
-                        <div className="relative">
-                          <Avatar className="h-20 w-20 border-4 border-white shadow-xl">
-                            <AvatarImage src={usuarioSeleccionado.avatar} />
-                            <AvatarFallback
-                              className={`${getAvatarColor(usuarioSeleccionado.idUsuario)} text-white text-xl font-bold`}
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-red-500">
+              <AlertCircle className="h-10 w-10 mb-2" />
+              <p className="font-bold">Error de acceso</p>
+              <p className="text-sm text-slate-500 text-center max-w-sm mt-1">
+                {getErrorMessage(error)}
+              </p>
+              <Button variant="outline" className="mt-4" onClick={fetchDatos}>
+                Reintentar
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader className="bg-gray-50/50">
+                  <TableRow>
+                    <TableHead className="pl-6 py-4 font-semibold">
+                      Foto
+                    </TableHead>
+                    <TableHead className="font-semibold">Usuario</TableHead>
+                    <TableHead className="font-semibold">Cargo / Rol</TableHead>
+                    <TableHead className="font-semibold">Email</TableHead>
+                    <TableHead className="font-semibold">Estado</TableHead>
+                    <TableHead className="text-right pr-6 font-semibold">
+                      Acciones
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-10">
+                        <div className="flex flex-col items-center gap-2 text-slate-500">
+                          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                          Cargando datos...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : usuariosPaginados.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-10 text-slate-500"
+                      >
+                        No se encontraron resultados.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    usuariosPaginados.map((u) => (
+                      <TableRow
+                        key={u.idUsuario}
+                        className="hover:bg-slate-50/80 transition-colors group"
+                      >
+                        <TableCell className="pl-6 py-4">
+                          <div className="h-11 w-11 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 font-bold shadow-sm ring-2 ring-white">
+                            {getInitials(u.nombreUsuario)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800">
+                              {u.nombreUsuario}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              ID: {u.idUsuario}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getCargoStyle(u.id_rol)}`}
+                          >
+                            {rolMap[u.id_rol] || u.nombreRol || "Usuario"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-slate-400" />
+                            <span className="text-slate-600 text-sm">
+                              {u.email}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <EstadoBadge usuario={u} size="small" />
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-600 hover:bg-blue-50 hover:scale-110 transition-all"
+                              onClick={() => {
+                                setUsuarioSeleccionado(u);
+                                setIsViewDialogOpen(true);
+                              }}
                             >
-                              {getInitials(usuarioSeleccionado.nombreUsuario)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="absolute -bottom-1 -right-1">
-                            <div className="h-5 w-5 rounded-full bg-emerald-500 border-2 border-white shadow-sm"></div>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-amber-600 hover:bg-amber-50 hover:scale-110 transition-all"
+                              onClick={() => handleEditClick(u)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:bg-red-50 hover:scale-110 transition-all"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-slate-900 leading-tight">
-                            {usuarioSeleccionado.nombreUsuario}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                            <p className="text-sm text-slate-600 font-medium">
-                              {rolMap[usuarioSeleccionado.id_rol] ||
-                                "Colaborador MSG"}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 mt-2">
-                            <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                            <p className="text-xs text-slate-500">
-                              Administrador del sistema
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <EstadoBadge
-                        usuario={usuarioSeleccionado}
-                        size="default"
-                      />
-                    </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+
+              {/* Paginación - AGREGADA */}
+              {totalPaginas > 1 && (
+                <div className="flex justify-between items-center p-4 border-t border-gray-200">
+                  <div className="text-sm text-slate-500">
+                    Mostrando {indexPrimerUsuario + 1} -{" "}
+                    {Math.min(indexUltimoUsuario, usuariosFiltrados.length)} de{" "}
+                    {usuariosFiltrados.length} usuarios
                   </div>
-
-                  {/* Grid de Información en 2 columnas */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Información de Registro */}
-                    <InfoCard
-                      icon={Calendar}
-                      iconColor="blue"
-                      title="Información de Registro"
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+                      disabled={paginaActual === 1}
                     >
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Fecha de registro
-                        </p>
-                        <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                          <Calendar className="h-3.5 w-3.5 text-blue-600" />
-                          31 diciembre 2023
-                        </p>
-                      </div>
-                      <Separator className="my-2" />
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Usuario ID
-                        </p>
-                        <p className="text-sm font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md inline-block">
-                          #
-                          {usuarioSeleccionado.idUsuario
-                            .toString()
-                            .padStart(4, "0")}
-                        </p>
-                      </div>
-                    </InfoCard>
-
-                    {/* Actividad Reciente */}
-                    <InfoCard
-                      icon={Activity}
-                      iconColor="emerald"
-                      title="Actividad Reciente"
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setPaginaActual((p) => Math.min(totalPaginas, p + 1))
+                      }
+                      disabled={paginaActual === totalPaginas}
                     >
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Último acceso
-                        </p>
-                        <p className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                          <Clock className="h-3.5 w-3.5 text-emerald-600" />
-                          31 marzo 2026
-                        </p>
-                      </div>
-                      <Separator className="my-2" />
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Actividad actual
-                        </p>
-                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                          <Activity className="w-3 h-3 mr-1" />
-                          Ahora mismo
-                        </Badge>
-                      </div>
-                    </InfoCard>
-
-                    {/* Permisos y Rol */}
-                    <InfoCard
-                      icon={ShieldCheck}
-                      iconColor="violet"
-                      title="Permisos y Rol"
-                    >
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Rol principal
-                        </p>
-                        <p className="text-sm font-semibold text-slate-800">
-                          {rolMap[usuarioSeleccionado.id_rol] ||
-                            "Administrador"}
-                        </p>
-                      </div>
-                      <Separator className="my-2" />
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Permisos especiales
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-violet-50 border-violet-200"
-                          >
-                            Gestión total
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-violet-50 border-violet-200"
-                          >
-                            Auditoría
-                          </Badge>
-                        </div>
-                      </div>
-                    </InfoCard>
-
-                    {/* Estado de Cuenta */}
-                    <InfoCard
-                      icon={Award}
-                      iconColor="amber"
-                      title="Estado de Cuenta"
-                    >
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Estado actual
-                        </p>
-                        <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Cuenta activa
-                        </Badge>
-                      </div>
-                      <Separator className="my-2" />
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Verificación
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3.5 w-3.5 text-amber-600" />
-                          <span className="text-xs text-slate-600">
-                            Email verificado
-                          </span>
-                        </div>
-                      </div>
-                    </InfoCard>
-                  </div>
-
-                  {/* Información Adicional - Contacto */}
-                  <div className="bg-gradient-to-r from-slate-50 to-white p-4 rounded-xl border border-slate-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Smartphone className="h-4 w-4 text-slate-500" />
-                      <h4 className="text-sm font-semibold text-slate-700">
-                        Información de Contacto
-                      </h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">
-                          Correo electrónico
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3.5 w-3.5 text-slate-400" />
-                          <span className="text-sm font-medium text-slate-800 break-all">
-                            {usuarioSeleccionado.email}
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500 mb-1">Teléfono</p>
-                        <p className="text-sm font-medium text-slate-800">
-                          +57 300 123 4567
-                        </p>
-                      </div>
-                    </div>
+                      Siguiente
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
                   </div>
                 </div>
               )}
-
-              {/* Footer con botones mejorados */}
-              <DialogFooter className="p-6 bg-slate-50/80 border-t border-slate-200 gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsViewDialogOpen(false)}
-                  className="border-slate-300 text-slate-700 hover:bg-white hover:border-slate-400 transition-all"
-                >
-                  Cerrar ventana
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </>
+          )}
         </div>
       </div>
+
+      <UserDetailsModal
+        isOpen={isViewDialogOpen}
+        onClose={() => setIsViewDialogOpen(false)}
+        usuario={usuarioSeleccionado}
+        rolMap={rolMap}
+        getAvatarColor={getAvatarColor}
+        getInitials={getInitials}
+      />
+
+      <UserEditModal
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        usuario={usuarioSeleccionado}
+        formData={formData}
+        listaRoles={roles}
+        onInputChange={handleInputChange}
+        onSelectChange={handleSelectChange}
+        onSubmit={handleSubmitEdit}
+        loading={editLoading}
+        getAvatarColor={getAvatarColor}
+        getInitials={getInitials}
+      />
     </div>
   );
 };
