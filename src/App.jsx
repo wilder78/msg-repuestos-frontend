@@ -3,15 +3,18 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 import DashboardContent from "./pages/Dashboard/DashboardContent";
-// Quitamos las llaves si es un export default (que es lo más común)
 import GestionUsuarios from "./pages/Users/GestionUsuarios";
+// Importamos el nuevo componente de Roles
+import GestionRoles from "./pages/Roles/GestionRoles";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
 
-      {/* Rutas del Dashboard compartiendo el mismo Layout */}
+      {/* ─── Rutas del Dashboard ─────────────────────────────────────── */}
+
+      {/* Inicio del Dashboard */}
       <Route
         path="/dashboard"
         element={
@@ -21,9 +24,7 @@ export default function App() {
         }
       />
 
-      {/* IMPORTANTE: Envolvemos Usuarios en el Layout 
-         para que mantenga el Sidebar y Navbar 
-      */}
+      {/* Gestión de Usuarios */}
       <Route
         path="/dashboard/usuarios"
         element={
@@ -33,10 +34,21 @@ export default function App() {
         }
       />
 
+      {/* Gestión de Roles y Permisos */}
+      <Route
+        path="/dashboard/roles"
+        element={
+          <DashboardLayout>
+            <GestionRoles />
+          </DashboardLayout>
+        }
+      />
+
+      {/* ─── Manejo de Error 404 ─────────────────────────────────────── */}
       <Route
         path="*"
         element={
-          <div className="flex h-screen items-center justify-center text-2xl font-bold">
+          <div className="flex h-screen items-center justify-center text-2xl font-bold text-slate-800">
             404 - Página no encontrada
           </div>
         }
@@ -44,39 +56,3 @@ export default function App() {
     </Routes>
   );
 }
-
-// import React from "react";
-// import { Routes, Route } from "react-router-dom";
-// import Home from "./pages/Home";
-// import DashboardLayout from "./pages/Dashboard/DashboardLayout";
-// import DashboardContent from "./pages/Dashboard/DashboardContent";
-// import { GestionUsuarios } from './pages/Users/GestionUsuarios';
-
-// export default function App() {
-//   return (
-//     <Routes>
-//       <Route path="/" element={<Home />} />
-
-//       {/* Vista principal del Dashboard */}
-//       <Route
-//         path="/dashboard"
-//         element={
-//           <DashboardLayout>
-//             <DashboardContent />
-//           </DashboardLayout>
-//         }
-//       />
-
-//       <Route path="/dashboard/usuarios" element={<GestionUsuarios />} />
-
-//       <Route
-//         path="*"
-//         element={
-//           <div className="p-10 text-center font-bold">
-//             404 - Página no encontrada
-//           </div>
-//         }
-//       />
-//     </Routes>
-//   );
-// }
