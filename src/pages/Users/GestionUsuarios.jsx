@@ -21,6 +21,7 @@ import {
   Mail,
 } from "lucide-react";
 
+import UserCreateModal from "./components/UserCreateModal";
 import EstadoBadge from "./components/EstadoBadge";
 import UserDetailsModal from "./components/UserDetailsModal";
 import UserEditModal from "./components/UserEditModal";
@@ -42,6 +43,13 @@ const authFetch = (url, options = {}) => {
   });
 };
 // ─────────────────────────────────────────────────────────────────────────────
+const initialCreateState = {
+  nombreUsuario: "",
+  email: "",
+  password: "",
+  id_rol: "",
+  idEstado: "1",
+};
 
 const GestionUsuarios = () => {
   // ─── Estado global ──────────────────────────────────────────────────────────
@@ -59,8 +67,10 @@ const GestionUsuarios = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false); // ✅ FALTABA ESTA VARIABLE
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false); // ✅ FALTABA ESTA VARIABLE
 
   // ─── Estado del formulario de edicion ──────────────────────────────────────
   const [formData, setFormData] = useState({
@@ -69,6 +79,8 @@ const GestionUsuarios = () => {
     id_rol: "",
     idEstado: "1",
   });
+
+  const [createFormData, setCreateFormData] = useState(initialCreateState);
 
   // ─── Carga inicial de datos ─────────────────────────────────────────────────
   const fetchDatos = useCallback(async () => {
@@ -160,7 +172,7 @@ const GestionUsuarios = () => {
   const handleSubmitEdit = async () => {
     setEditLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getAuthToken(); // ✅ USAR getAuthToken EN LUGAR DE localStorage.getItem
       const payload = {
         nombreUsuario: formData.nombreUsuario,
         email: formData.email,
@@ -210,11 +222,91 @@ const GestionUsuarios = () => {
     }
   };
 
+  // ─── Crear un nuevo usuario ──────────────────────────────────────────────────
+  const handleSubmitCreate = async () => {
+    // ── 1. Validación de campos obligatorios ──────────────────────────────────
+    const { nombreUsuario, email, password, id_rol, idEstado } = createFormData;
+
+    if (!nombreUsuario.trim()) {
+      alert("El nombre de usuario es obligatorio.");
+      return;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alert("Ingresa un correo electrónico válido.");
+      return;
+    }
+    if (!password || password.length < 6) {
+      alert("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (!id_rol) {
+      alert("Debes seleccionar un rol.");
+      return;
+    }
+
+    setCreateLoading(true);
+
+    try {
+      // ── 2. Payload limpio y tipado correctamente ───────────────────────────
+      const payload = {
+        nombreUsuario: nombreUsuario.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        idRol: parseInt(id_rol, 10), // ✅ base 10 explícita
+        idEstado: parseInt(idEstado, 10), // ✅ destructurado arriba
+      };
+
+      // ✅ Ruta correcta
+      const response = await authFetch(
+        "http://localhost:8080/api/users/register",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+      );
+
+      // ── 3. Manejo de respuesta ─────────────────────────────────────────────
+      if (response.ok) {
+        const result = await response.json();
+        const nuevoUsuario = result.data || result.usuario || result;
+
+        // ✅ Normaliza id_rol para que rolMap lo resuelva sin recargar la tabla
+        if (!nuevoUsuario.id_rol && nuevoUsuario.idRol) {
+          nuevoUsuario.id_rol = nuevoUsuario.idRol;
+        }
+
+        setUsuarios((prev) => [nuevoUsuario, ...prev]);
+        setIsCreateDialogOpen(false);
+        setCreateFormData(initialCreateState);
+      } else {
+        // ✅ Intenta leer el cuerpo del error; si falla, usa el status HTTP
+        const err = await response.json().catch(() => null);
+        const msg =
+          err?.error ||
+          err?.message ||
+          `Error del servidor (${response.status})`;
+        alert(`No se pudo crear el usuario: ${msg}`);
+      }
+    } catch (error) {
+      // ✅ Distingue errores de red de errores inesperados
+      const esErrorRed =
+        error instanceof TypeError && error.message === "Failed to fetch";
+      alert(
+        esErrorRed
+          ? "Sin conexión con el servidor. Verifica tu red e intenta de nuevo."
+          : `Error inesperado: ${error.message}`,
+      );
+      console.error("[handleSubmitCreate]", error);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   // ─── Confirmar eliminacion ──────────────────────────────────────────────────
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getAuthToken(); // ✅ USAR getAuthToken EN LUGAR DE localStorage.getItem
 
       // El backend hace borrado logico: cambia idEstado a 2 (Inactivo)
       const response = await fetch(
@@ -307,12 +399,14 @@ const GestionUsuarios = () => {
               Panel administrativo MSG Repuestos
             </p>
           </div>
-          <Button className="bg-[#10b981] hover:bg-[#0da673]">
+          <Button
+            className="bg-[#10b981] hover:bg-[#0da673]"
+            onClick={() => setIsCreateDialogOpen(true)} // ✅ AGREGADO EL onClick
+          >
             <Plus className="mr-2 h-4 w-4" /> Crear Usuario
           </Button>
         </div>
       </div>
-
       {/* Tabla */}
       <div className="flex-1 p-8 overflow-auto">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -354,6 +448,15 @@ const GestionUsuarios = () => {
                     className="text-center py-10 text-red-500"
                   >
                     {error}
+                  </TableCell>
+                </TableRow>
+              ) : usuariosPaginados.length === 0 ? ( // ✅ AGREGADO MENSAJE CUANDO NO HAY RESULTADOS
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-10 text-slate-500"
+                  >
+                    No se encontraron usuarios
                   </TableCell>
                 </TableRow>
               ) : (
@@ -440,34 +543,35 @@ const GestionUsuarios = () => {
           </Table>
 
           {/* Paginacion */}
-          <div className="p-4 border-t flex justify-between items-center">
-            <span className="text-sm text-slate-500">
-              Pagina {paginaActual} de {totalPaginas}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
-                disabled={paginaActual === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setPaginaActual((p) => Math.min(totalPaginas, p + 1))
-                }
-                disabled={paginaActual === totalPaginas}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+          {totalPaginas > 0 && ( // ✅ SOLO MOSTRAR PAGINACION SI HAY PAGINAS
+            <div className="p-4 border-t flex justify-between items-center">
+              <span className="text-sm text-slate-500">
+                Pagina {paginaActual} de {totalPaginas}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+                  disabled={paginaActual === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setPaginaActual((p) => Math.min(totalPaginas, p + 1))
+                  }
+                  disabled={paginaActual === totalPaginas}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-
       {/* Modales */}
       <UserDetailsModal
         isOpen={isViewDialogOpen}
@@ -494,6 +598,24 @@ const GestionUsuarios = () => {
         getAvatarColor={getAvatarColor}
         getInitials={getInitials}
       />
+      <UserCreateModal
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        formData={createFormData}
+        listaRoles={roles}
+        onInputChange={(e) =>
+          setCreateFormData((prev) => ({
+            ...prev,
+            [e.target.name]: e.target.value,
+          }))
+        }
+        onSelectChange={(name, value) =>
+          setCreateFormData((prev) => ({ ...prev, [name]: value }))
+        }
+        onSubmit={handleSubmitCreate}
+        loading={createLoading}
+      />
+
       <UserDeleteModal
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
