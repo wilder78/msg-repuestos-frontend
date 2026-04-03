@@ -23,7 +23,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import InfoCard from "./InfoCard";
-import EstadoBadge from "./EstadoBadge";
+import EstadoBadge from "../../../components/shared/EstadoBadge";
 
 const UserDetailsModal = ({
   isOpen,

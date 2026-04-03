@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { Button } from "../../components/ui/button";
-import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Users } from "lucide-react";
 
 // Hook personalizado e imports de componentes compartidos
 import { useUsers } from "../../hooks/useUsers";
@@ -43,9 +42,7 @@ const GestionUsuarios = () => {
   const [editFormData, setEditFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
 
-  // --- Funciones de Control ---
-  const handleCreateUser = () => toggleModal("create", true);
-
+  // --- Funciones de Control de Modales ---
   const toggleModal = (type, isOpen, user = null) => {
     setSelectedUser(user);
     if (type === "edit" && user) {
@@ -76,7 +73,6 @@ const GestionUsuarios = () => {
         },
       );
       if (res.ok) {
-        // Actualizamos el estado local para que la tabla se refresque sin recargar
         setUsers((prev) =>
           prev.map((u) =>
             u.idUsuario === selectedUser.idUsuario
@@ -162,36 +158,21 @@ const GestionUsuarios = () => {
     }
   };
 
-  // ─── Helpers ─────────────────────────────────────────────────────
-  const getInitials = (n) =>
-    n
-      ?.split(" ")
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "??";
-  const getAvatarColor = (id) => {
-    const colors = [
-      "bg-emerald-500",
-      "bg-blue-500",
-      "bg-violet-500",
-      "bg-amber-500",
-      "bg-rose-500",
-    ];
-    return colors[id % colors.length];
-  };
-
-  const filteredUsers = users.filter(
-    (u) =>
-      u.nombreUsuario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // ─── Filtrado y Paginación ────────────────────────────────────────────────
+  const filteredUsers = useMemo(() => {
+    return users.filter(
+      (u) =>
+        u.nombreUsuario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [users, searchTerm]);
 
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage,
-  );
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * usersPerPage;
+    return filteredUsers.slice(start, start + usersPerPage);
+  }, [filteredUsers, currentPage]);
 
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
@@ -200,12 +181,11 @@ const GestionUsuarios = () => {
         title="Gestión de Usuarios"
         subtitle="Panel administrativo MSG Repuestos"
         buttonText="Crear Usuario"
-        onButtonClick={handleCreateUser}
+        onButtonClick={() => toggleModal("create", true)}
       />
 
       <div className="flex-1 p-8 overflow-auto">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
-          {/* Reemplazo de la barra de búsqueda manual por el componente genérico */}
           <TableToolbar
             title="Usuarios del Sistema"
             count={filteredUsers.length}
@@ -221,19 +201,16 @@ const GestionUsuarios = () => {
             users={paginatedUsers}
             roleMap={roleMap}
             loading={loading}
-            getAvatarColor={getAvatarColor}
-            getInitials={getInitials}
             onView={(u) => toggleModal("view", true, u)}
             onEdit={(u) => toggleModal("edit", true, u)}
             onDelete={(u) => toggleModal("delete", true, u)}
             onToggleStatus={handleToggleStatus}
           />
 
-          {/* PAGINATION */}
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={(page) => setCurrentPage(page)}
+            onPageChange={setCurrentPage}
           />
         </div>
       </div>
@@ -274,8 +251,6 @@ const GestionUsuarios = () => {
         }
         onSubmit={onEditSubmit}
         loading={actionLoading}
-        getInitials={getInitials}
-        getAvatarColor={getAvatarColor}
       />
 
       <UserDetailsModal
@@ -283,8 +258,6 @@ const GestionUsuarios = () => {
         onClose={() => toggleModal("view", false)}
         usuario={selectedUser}
         rolMap={roleMap}
-        getAvatarColor={getAvatarColor}
-        getInitials={getInitials}
       />
 
       <UserDeleteModal

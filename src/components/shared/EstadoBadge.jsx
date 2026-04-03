@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Badge } from "../../../components/ui/badge";
+import { Badge } from "../ui/badge";
 import { CheckCircle, AlertCircle } from "lucide-react";
 
 const EstadoBadge = ({ usuario, onToggle, size = "default" }) => {
   const [hovered, setHovered] = useState(false);
-  
+
   // Mejor manejo del estado: considera 1 como activo, cualquier otro valor como inactivo
   // Incluye validación para cuando usuario es null o undefined
   const isActivo = usuario?.idEstado === 1;
