@@ -5,10 +5,16 @@ import RoleDetailsModal from "./components/RoleDetailsModal";
 import { ShieldCheck } from "lucide-react";
 import PageHeader from "../../components/shared/PageHeader";
 import TableToolbar from "../../components/shared/TableToolbar";
+// 1. Importamos el nuevo componente compartido
+import TablePagination from "../../components/shared/TablePagination";
 
 const GestionRoles = () => {
   const { roles, loading, refresh } = useRoles();
   const [searchTerm, setSearchTerm] = useState("");
+
+  // 2. Estados para la paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const rolesPerPage = 8; // Manteniendo la consistencia con usuarios
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
@@ -19,6 +25,7 @@ const GestionRoles = () => {
     console.log("Abriendo modal para crear nuevo rol...");
   };
 
+  // 3. Filtrado de roles
   const filteredRoles = useMemo(() => {
     if (!roles) return [];
     return roles.filter(
@@ -27,6 +34,14 @@ const GestionRoles = () => {
         rol.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [roles, searchTerm]);
+
+  // 4. Lógica para obtener los roles de la página actual
+  const totalPages = Math.ceil(filteredRoles.length / rolesPerPage);
+
+  const paginatedRoles = useMemo(() => {
+    const startIndex = (currentPage - 1) * rolesPerPage;
+    return filteredRoles.slice(startIndex, startIndex + rolesPerPage);
+  }, [filteredRoles, currentPage]);
 
   const handleViewDetails = async (rol) => {
     setSelectedRole(rol);
@@ -65,23 +80,33 @@ const GestionRoles = () => {
         onButtonClick={handleCreateRole}
       />
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Este componente ahora sí está definido */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
         <TableToolbar
           title="Roles del Sistema"
           count={filteredRoles.length}
           searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
+          onSearchChange={(val) => {
+            setSearchTerm(val);
+            setCurrentPage(1); // Reiniciar a página 1 al buscar
+          }}
           placeholder="Buscar por nombre o descripción..."
         />
 
+        {/* 5. Pasamos paginatedRoles en lugar de filteredRoles */}
         <RolesTable
-          roles={filteredRoles}
+          roles={paginatedRoles}
           isLoading={loading || isLoadingDetails}
           onView={handleViewDetails}
           onEdit={(rol) => console.log("Editando rol:", rol.id)}
           onDelete={(rol) => console.log("Eliminando rol:", rol.id)}
           onRefresh={refresh}
+        />
+
+        {/* 6. Implementación del componente de paginación */}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
         />
       </div>
 

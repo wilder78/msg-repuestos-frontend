@@ -5,7 +5,8 @@ import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 // Hook personalizado e imports de componentes compartidos
 import { useUsers } from "../../hooks/useUsers";
 import PageHeader from "../../components/shared/PageHeader";
-import TableToolbar from "../../components/shared/TableToolbar"; // Añadido
+import TableToolbar from "../../components/shared/TableToolbar";
+import TablePagination from "../../components/shared/TablePagination";
 
 // Componentes del módulo
 import UserCreateModal from "./components/UserCreateModal";
@@ -229,35 +230,11 @@ const GestionUsuarios = () => {
           />
 
           {/* PAGINATION */}
-          {totalPages > 1 && (
-            <div className="p-4 border-t flex justify-between items-center bg-gray-50/30">
-              <p className="text-sm text-slate-500">
-                Página{" "}
-                <span className="font-medium text-slate-900">
-                  {currentPage}
-                </span>{" "}
-                de {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
         </div>
       </div>
 
