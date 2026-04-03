@@ -9,9 +9,9 @@ import {
 } from "../../../components/ui/table";
 import { Button } from "../../../components/ui/button";
 import { Eye, Edit2, Trash2, CheckCircle2, Loader2 } from "lucide-react";
+import ActionButtons from "../../../components/shared/ActionButtons";
 
 const RolesTable = ({ roles, isLoading, onView, onEdit, onDelete }) => {
-  // Función para determinar el color del círculo según el rol (si no viene del backend)
   const getRoleColor = (rolName) => {
     const colors = {
       Master: "bg-red-500",
@@ -27,7 +27,9 @@ const RolesTable = ({ roles, isLoading, onView, onEdit, onDelete }) => {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-slate-500">Cargando roles...</span>
+        <span className="ml-2 text-slate-500 font-medium">
+          Cargando roles...
+        </span>
       </div>
     );
   }
@@ -36,7 +38,7 @@ const RolesTable = ({ roles, isLoading, onView, onEdit, onDelete }) => {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent bg-slate-50/50">
-          <TableHead className="w-[350px]">Rol</TableHead>
+          <TableHead className="w-[300px]">Rol</TableHead>
           <TableHead>Permisos</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Fecha Creación</TableHead>
@@ -52,64 +54,52 @@ const RolesTable = ({ roles, isLoading, onView, onEdit, onDelete }) => {
           </TableRow>
         ) : (
           roles.map((rol) => (
-            <TableRow key={rol.id_rol || rol.id} className="group">
+            <TableRow
+              key={rol.id} // Usamos el ID normalizado por el hook
+              className="group transition-colors hover:bg-slate-50/50"
+            >
               <TableCell>
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-1 h-3 w-3 rounded-full shrink-0 ${getRoleColor(rol.nombre_rol || rol.nombre)}`}
+                    className={`mt-1 h-3 w-3 rounded-full shrink-0 shadow-sm ${getRoleColor(rol.nombre)}`}
                   />
                   <div className="flex flex-col">
-                    <span className="font-bold text-slate-700">
-                      {rol.nombre_rol || rol.nombre}
+                    <span className="font-bold text-slate-700 leading-none mb-1">
+                      {rol.nombre}
                     </span>
-                    <span className="text-xs text-slate-400 leading-relaxed max-w-[280px]">
-                      {rol.descripcion || "Sin descripción asignada"}
+                    <span className="text-xs text-slate-400 line-clamp-1 max-w-[250px]">
+                      {rol.descripcion}
                     </span>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
-                <span className="inline-flex items-center px-2 py-0.5 rounded border border-slate-200 text-[11px] font-medium bg-white text-slate-600 shadow-sm">
+                <span className="inline-flex items-center px-2 py-0.5 rounded border border-slate-200 text-[11px] font-bold bg-white text-slate-600 shadow-xs">
                   {rol.permisosCount}{" "}
                   {rol.permisosCount === 1 ? "permiso" : "permisos"}
                 </span>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full w-fit border border-emerald-100 text-xs font-bold uppercase tracking-wider">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {rol.estado || "activo"}
+                <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full w-fit border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
+                  <CheckCircle2 className="h-3 w-3" />
+                  {rol.estado}
                 </div>
               </TableCell>
-              <TableCell className="text-slate-500 text-sm">
-                {rol.fechaCreacion || "N/A"}
+              <TableCell className="text-slate-500 text-sm font-medium">
+                {rol.fechaCreacion}
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-blue-500 hover:bg-blue-50"
-                    onClick={() => onView(rol)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-emerald-500 hover:bg-emerald-50"
-                    onClick={() => onEdit(rol)}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-red-400 hover:bg-red-50"
-                    onClick={() => onDelete(rol)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                <ActionButtons
+                  item={rol}
+                  onView={onView}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  labels={{
+                    view: "Ver detalles",
+                    edit: "Editar rol",
+                    delete: "Eliminar rol",
+                  }}
+                />
               </TableCell>
             </TableRow>
           ))

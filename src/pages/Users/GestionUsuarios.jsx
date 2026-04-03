@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 
-// Hook personalizado
+// Hook personalizado e imports de componentes compartidos
 import { useUsers } from "../../hooks/useUsers";
+import PageHeader from "../../components/shared/PageHeader";
+import TableToolbar from "../../components/shared/TableToolbar"; // Añadido
 
 // Componentes del módulo
 import UserCreateModal from "./components/UserCreateModal";
@@ -23,15 +24,12 @@ const INITIAL_CREATE_STATE = {
 };
 
 const GestionUsuarios = () => {
-  // ─── Lógica del Hook ──────────────────────────────────────────────────────
   const { users, setUsers, roles, roleMap, loading, authFetch } = useUsers();
 
-  // ─── Estado de UI ──────────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 8;
 
-  // ─── Control de Modales ────────────────────────────────────────────────────
   const [selectedUser, setSelectedUser] = useState(null);
   const [modals, setModals] = useState({
     create: false,
@@ -43,6 +41,9 @@ const GestionUsuarios = () => {
   const [createFormData, setCreateFormData] = useState(INITIAL_CREATE_STATE);
   const [editFormData, setEditFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
+
+  // --- Funciones de Control ---
+  const handleCreateUser = () => toggleModal("create", true);
 
   const toggleModal = (type, isOpen, user = null) => {
     setSelectedUser(user);
@@ -58,6 +59,44 @@ const GestionUsuarios = () => {
   };
 
   // ─── Handlers de Acciones ──────────────────────────────────────────────────
+
+  const onEditSubmit = async () => {
+    setActionLoading(true);
+    try {
+      const res = await authFetch(
+        `http://localhost:8080/api/users/${selectedUser.idUsuario}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            ...editFormData,
+            idRol: parseInt(editFormData.id_rol),
+            idEstado: parseInt(editFormData.idEstado),
+          }),
+        },
+      );
+      if (res.ok) {
+        // Actualizamos el estado local para que la tabla se refresque sin recargar
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.idUsuario === selectedUser.idUsuario
+              ? {
+                  ...u,
+                  ...editFormData,
+                  id_rol: parseInt(editFormData.id_rol),
+                  idEstado: parseInt(editFormData.idEstado),
+                }
+              : u,
+          ),
+        );
+        toggleModal("edit", false);
+      }
+    } catch (error) {
+      console.error("Error al editar usuario:", error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleToggleStatus = async (user) => {
     const nextStatus = user.idEstado === 1 ? 2 : 1;
     try {
@@ -76,7 +115,7 @@ const GestionUsuarios = () => {
         );
       }
     } catch (err) {
-      console.error("Error toggling status", err);
+      console.error(err);
     }
   };
 
@@ -96,35 +135,6 @@ const GestionUsuarios = () => {
         setUsers((prev) => [newUser.data || newUser, ...prev]);
         toggleModal("create", false);
         setCreateFormData(INITIAL_CREATE_STATE);
-      }
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const onEditSubmit = async () => {
-    setActionLoading(true);
-    try {
-      const res = await authFetch(
-        `http://localhost:8080/api/users/${selectedUser.idUsuario}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            ...editFormData,
-            idRol: parseInt(editFormData.id_rol),
-            idEstado: parseInt(editFormData.idEstado),
-          }),
-        },
-      );
-      if (res.ok) {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.idUsuario === selectedUser.idUsuario
-              ? { ...u, ...editFormData, id_rol: parseInt(editFormData.id_rol) }
-              : u,
-          ),
-        );
-        toggleModal("edit", false);
       }
     } finally {
       setActionLoading(false);
@@ -151,7 +161,7 @@ const GestionUsuarios = () => {
     }
   };
 
-  // ─── Helpers de Estilo ─────────────────────────────────────────────────────
+  // ─── Helpers ─────────────────────────────────────────────────────
   const getInitials = (n) =>
     n
       ?.split(" ")
@@ -159,7 +169,6 @@ const GestionUsuarios = () => {
       .join("")
       .toUpperCase()
       .slice(0, 2) || "??";
-
   const getAvatarColor = (id) => {
     const colors = [
       "bg-emerald-500",
@@ -171,7 +180,6 @@ const GestionUsuarios = () => {
     return colors[id % colors.length];
   };
 
-  // ─── Filtrado y Paginación ────────────────────────────────────────────────
   const filteredUsers = users.filter(
     (u) =>
       u.nombreUsuario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -186,44 +194,28 @@ const GestionUsuarios = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
-      {/* HEADER */}
-      <div className="px-8 py-6 bg-white border-b flex justify-between items-center shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Gestión de Usuarios
-          </h1>
-          <p className="text-slate-500 text-sm">
-            Panel administrativo MSG Repuestos
-          </p>
-        </div>
-        <Button
-          className="bg-[#10b981] hover:bg-[#0da673] shadow-md transition-all active:scale-95"
-          onClick={() => toggleModal("create", true)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Crear Usuario
-        </Button>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="Gestión de Usuarios"
+        subtitle="Panel administrativo MSG Repuestos"
+        buttonText="Crear Usuario"
+        onButtonClick={handleCreateUser}
+      />
 
-      {/* MAIN CONTENT */}
       <div className="flex-1 p-8 overflow-auto">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
-          {/* SEARCH BAR */}
-          <div className="p-4 border-b">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Buscar por nombre o email..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-          </div>
+          {/* Reemplazo de la barra de búsqueda manual por el componente genérico */}
+          <TableToolbar
+            title="Usuarios del Sistema"
+            count={filteredUsers.length}
+            searchTerm={searchTerm}
+            onSearchChange={(val) => {
+              setSearchTerm(val);
+              setCurrentPage(1);
+            }}
+            placeholder="Buscar por nombre o email..."
+          />
 
-          {/* TABLE COMPONENT */}
           <UserTable
             users={paginatedUsers}
             roleMap={roleMap}
