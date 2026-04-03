@@ -15,6 +15,7 @@ export const useLogin = (isOpen, onClose) => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
+  // Limpiar el formulario al cerrar el modal
   useEffect(() => {
     if (!isOpen) {
       setEmail("");
@@ -25,6 +26,7 @@ export const useLogin = (isOpen, onClose) => {
     }
   }, [isOpen]);
 
+  // Manejo de accesibilidad y teclado
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") onClose();
@@ -41,7 +43,7 @@ export const useLogin = (isOpen, onClose) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading === true || loading === "success") return;
 
     setLoading(true);
     setError("");
@@ -50,20 +52,28 @@ export const useLogin = (isOpen, onClose) => {
       const response = await loginUser(email, password);
 
       if (response) {
+        // 1. Extraer el rol correctamente (ajusta según tu API: response.idRol o response.user.idRol)
+        const userRol =
+          response.idRol || response.user?.idRol || response.data?.idRol;
+
         setLoading("success");
-        const userRol = response.idRol;
 
         setTimeout(() => {
           onClose();
 
-          if (userRol !== 7) {
+          // 2. Lógica de acceso: Si NO es cliente (7), va al dashboard.
+          // Si ES cliente (7), se queda en la tienda.
+          if (Number(userRol) !== 7) {
             navigate("/dashboard");
           } else {
+            // Recarga la página o redirige a la home para actualizar el Navbar
+            navigate("/", { replace: true });
             navigate(0);
           }
-        }, 500);
+        }, 600);
       }
     } catch (err) {
+      console.error("Login Error:", err);
       const errorMessage =
         err?.response?.data?.message ||
         err?.message ||

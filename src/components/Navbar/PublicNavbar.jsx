@@ -19,6 +19,12 @@ export default function Navbar() {
     toggleLogin = () => {},
   } = navbarData || {};
 
+  // --- LÓGICA DE CONTROL DE ROL ---
+  // Obtenemos el usuario del localStorage
+  const user = JSON.parse(localStorage.getItem("user"));
+  // Definimos si es empleado: debe estar logueado y su idRol NO debe ser 7 (Cliente)
+  const isEmployee = user && Number(user.idRol) !== 7;
+
   return (
     <nav
       className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -41,13 +47,15 @@ export default function Navbar() {
 
           <div className="flex items-center gap-2 lg:gap-6">
             <div className="hidden lg:block">
-              <NavLinks />
+              {/* Pasamos la condición a los links de escritorio */}
+              <NavLinks isEmployee={isEmployee} />
             </div>
 
             <NavActions
               isMenuOpen={isMenuOpen}
               toggleMenu={toggleMenu}
               toggleLogin={toggleLogin}
+              isEmployee={isEmployee} // También se lo pasamos a las acciones por si quieres mostrar algo ahí
             />
           </div>
         </div>
@@ -61,6 +69,7 @@ export default function Navbar() {
         isOpen={isMenuOpen}
         onClose={closeMenu}
         onLoginClick={toggleLogin}
+        isEmployee={isEmployee} // Pasamos la condición al menú móvil
       />
 
       <LoginModal isOpen={isLoginOpen} onClose={toggleLogin} />
