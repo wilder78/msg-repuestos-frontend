@@ -41,13 +41,12 @@ export const useRoles = () => {
           (p) => p.idRol === idActual || p.id_rol === idActual,
         );
 
-        // 1. Cambiamos el valor por defecto a "N/A" para que coincida con tu UI
         let ultimaFecha = "N/A";
 
         if (asignacionesDelRol.length > 0) {
           const fechas = asignacionesDelRol
             .map((a) => new Date(a.fechaAsignacion))
-            .filter((d) => !isNaN(d)) // Validación de fecha válida
+            .filter((d) => !isNaN(d))
             .sort((a, b) => b - a);
 
           if (fechas.length > 0) {
@@ -59,18 +58,19 @@ export const useRoles = () => {
           }
         }
 
+        // ✅ return dentro del map, con su cierre correcto
         return {
           id: idActual,
           nombre: rol.nombreRol || rol.nombre_rol || rol.nombre,
           descripcion: rol.descripcion || "Sin descripción",
           estado: rol.estado || "activo",
-          // 2. IMPORTANTE: Cambiamos el nombre de la propiedad a fechaCreacion
-          // para que RolesTable.jsx pueda encontrarla automáticamente.
+          idEstado: rol.idEstado || rol.id_estado || 1,
           fechaCreacion: ultimaFecha,
           permisosCount: asignacionesDelRol.length,
         };
-      });
+      }); // ✅ cierre del .map()
 
+      // ✅ setRoles va DESPUÉS del map, no dentro de él
       setRoles(formattedRoles);
     } catch (err) {
       console.error("Error al sincronizar datos:", err);
@@ -83,5 +83,6 @@ export const useRoles = () => {
     fetchRolesData();
   }, [fetchRolesData]);
 
-  return { roles, loading, refresh: fetchRolesData };
+  // ✅ setRoles expuesto para actualizaciones optimistas
+  return { roles, setRoles, loading, refresh: fetchRolesData };
 };

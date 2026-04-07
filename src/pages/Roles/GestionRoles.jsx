@@ -5,27 +5,62 @@ import RoleDetailsModal from "./components/RoleDetailsModal";
 import { ShieldCheck } from "lucide-react";
 import PageHeader from "../../components/shared/PageHeader";
 import TableToolbar from "../../components/shared/TableToolbar";
-// 1. Importamos el nuevo componente compartido
 import TablePagination from "../../components/shared/TablePagination";
 
 const GestionRoles = () => {
-  const { roles, loading, refresh } = useRoles();
+  // 1. Extraemos setRoles para actualizar el estado localmente tras un cambio
+  const { roles, setRoles, loading, refresh } = useRoles();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // 2. Estados para la paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const rolesPerPage = 8; // Manteniendo la consistencia con usuarios
+  const rolesPerPage = 8;
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
   const [rolePermissions, setRolePermissions] = useState([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
+  // --- Lógica de Cambio de Estado ---
+  const handleToggleStatus = async (rol) => {
+    const nextStatus = rol.idEstado === 1 ? 2 : 1;
+
+    try {
+      const token =
+        localStorage.getItem("token") || sessionStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:8080/api/roles/${rol.id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...rol,
+            idEstado: nextStatus,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        // Actualización optimista: actualizamos el estado local inmediatamente
+        setRoles((prev) =>
+          prev.map((r) =>
+            r.id === rol.id ? { ...r, idEstado: nextStatus } : r,
+          ),
+        );
+      } else {
+        console.error("No se pudo actualizar el estado en el servidor");
+      }
+    } catch (error) {
+      console.error("Error en la petición de cambio de estado:", error);
+    }
+  };
+
   const handleCreateRole = () => {
     console.log("Abriendo modal para crear nuevo rol...");
   };
 
-  // 3. Filtrado de roles
   const filteredRoles = useMemo(() => {
     if (!roles) return [];
     return roles.filter(
@@ -35,7 +70,6 @@ const GestionRoles = () => {
     );
   }, [roles, searchTerm]);
 
-  // 4. Lógica para obtener los roles de la página actual
   const totalPages = Math.ceil(filteredRoles.length / rolesPerPage);
 
   const paginatedRoles = useMemo(() => {
@@ -87,22 +121,22 @@ const GestionRoles = () => {
           searchTerm={searchTerm}
           onSearchChange={(val) => {
             setSearchTerm(val);
-            setCurrentPage(1); // Reiniciar a página 1 al buscar
+            setCurrentPage(1);
           }}
           placeholder="Buscar por nombre o descripción..."
         />
 
-        {/* 5. Pasamos paginatedRoles en lugar de filteredRoles */}
         <RolesTable
           roles={paginatedRoles}
-          isLoading={loading || isLoadingDetails}
+          loading={loading || isLoadingDetails}
           onView={handleViewDetails}
           onEdit={(rol) => console.log("Editando rol:", rol.id)}
           onDelete={(rol) => console.log("Eliminando rol:", rol.id)}
+          // 2. Pasamos la nueva función a la tabla
+          onToggleStatus={handleToggleStatus}
           onRefresh={refresh}
         />
 
-        {/* 6. Implementación del componente de paginación */}
         <TablePagination
           currentPage={currentPage}
           totalPages={totalPages}
