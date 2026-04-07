@@ -23,7 +23,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import InfoCard from "./InfoCard";
-import EstadoBadge from "../../../components/shared/EstadoBadge";
+import StatusBadge from "../../../components/shared/StatusBadge";
 
 const UserDetailsModal = ({
   isOpen,
@@ -131,7 +131,7 @@ const UserDetailsModal = ({
                     </div>
                   </div>
                 </div>
-                <EstadoBadge usuario={usuario} size="default" />
+                <StatusBadge statusId={usuario.idEstado} />
               </div>
             </div>
 
