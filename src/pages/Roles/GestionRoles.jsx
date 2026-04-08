@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react"; // 1. Añadimos useEffect
+import React, { useState, useMemo, useEffect } from "react";
 import { useRoles } from "../../hooks/useRoles";
 import RolesTable from "./components/RolesTable";
 import RoleDetailsModal from "./components/RoleDetailsModal";
@@ -7,7 +7,6 @@ import { ShieldCheck } from "lucide-react";
 import PageHeader from "../../components/shared/PageHeader";
 import TableToolbar from "../../components/shared/TableToolbar";
 import TablePagination from "../../components/shared/TablePagination";
-import { toast } from "sonner"; // O tu librería de notificaciones
 
 const GestionRoles = () => {
   const { roles, setRoles, loading, refresh } = useRoles();
@@ -17,14 +16,13 @@ const GestionRoles = () => {
 
   // Estados para Modales
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false); // 3. Estado para el modal de creación
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const [selectedRole, setSelectedRole] = useState(null);
   const [rolePermissions, setRolePermissions] = useState([]);
-  const [allSystemPermissions, setAllSystemPermissions] = useState([]); // 4. Para cargar permisos de la DB
+  const [allSystemPermissions, setAllSystemPermissions] = useState([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  // --- 5. Cargar todos los permisos del sistema al montar el componente ---
   useEffect(() => {
     const fetchAllPermissions = async () => {
       try {
@@ -35,7 +33,6 @@ const GestionRoles = () => {
         });
         if (response.ok) {
           const data = await response.json();
-          // Aquí puedes usar la función groupPermissions que definimos antes si prefieres
           setAllSystemPermissions(data);
         }
       } catch (error) {
@@ -45,31 +42,10 @@ const GestionRoles = () => {
     fetchAllPermissions();
   }, []);
 
-  // --- Lógica de Guardado de Nuevo Rol ---
-  const handleSaveNewRole = async (newRoleData) => {
-    try {
-      const token =
-        localStorage.getItem("token") || sessionStorage.getItem("token");
-      const response = await fetch("http://localhost:8080/api/roles", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newRoleData),
-      });
-
-      if (response.ok) {
-        toast.success("Rol creado exitosamente");
-        refresh(); // Recargamos la lista completa de la DB
-        setIsCreateOpen(false);
-      } else {
-        toast.error("Error al crear el rol");
-      }
-    } catch (error) {
-      console.error("Error en la petición:", error);
-      toast.error("Error de conexión con el servidor");
-    }
+  // ✅ CORRECCIÓN PRINCIPAL: onRolCreated solo llama a refresh()
+  // RolCreateModal ya maneja internamente toda la lógica POST + asignación de permisos
+  const handleRolCreated = async () => {
+    await refresh();
   };
 
   const handleToggleStatus = async (rol) => {
@@ -101,19 +77,14 @@ const GestionRoles = () => {
     }
   };
 
-  // --- Agrupador de permisos para el Modal (Estilo Figma) ---
-  // --- Agrupador de permisos con validaciones ---
   const groupedPermissions = useMemo(() => {
     if (!allSystemPermissions || allSystemPermissions.length === 0) return [];
 
     return allSystemPermissions.reduce((acc, perm) => {
-      // Validación: Si el permiso no tiene nombre, lo ignoramos para evitar el error de 'split'
       if (!perm || !perm.nombre) return acc;
 
-      // Extraemos el módulo (ej: de "ver_usuarios" extrae "usuarios")
       const partes = perm.nombre.split("_");
       const modulo = partes.length > 1 ? partes[1] : "General";
-
       const categoryName = modulo.charAt(0).toUpperCase() + modulo.slice(1);
 
       let category = acc.find((c) => c.nombre === categoryName);
@@ -127,7 +98,7 @@ const GestionRoles = () => {
       }
 
       category.items.push({
-        id: perm.idPermiso || perm.id, // Aseguramos capturar el ID correcto
+        id: perm.idPermiso || perm.id,
         nombre: perm.nombre,
         desc: perm.descripcion || `Acceso a ${perm.nombre}`,
       });
@@ -136,7 +107,6 @@ const GestionRoles = () => {
     }, []);
   }, [allSystemPermissions]);
 
-  // Filtros y Paginación (Se mantienen igual)
   const filteredRoles = useMemo(() => {
     if (!roles) return [];
     return roles.filter(
@@ -160,9 +130,7 @@ const GestionRoles = () => {
         localStorage.getItem("token") || sessionStorage.getItem("token");
       const response = await fetch(
         "http://localhost:8080/api/role-permissions/",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.ok) {
         const allPerms = await response.json();
@@ -186,7 +154,7 @@ const GestionRoles = () => {
         title="Gestión de Roles y Permisos"
         subtitle="MSG Repuestos - Panel de control de acceso y seguridad"
         buttonText="Crear Nuevo Rol"
-        onButtonClick={() => setIsCreateOpen(true)} // 6. Abrimos el modal de creación
+        onButtonClick={() => setIsCreateOpen(true)}
       />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
@@ -218,7 +186,6 @@ const GestionRoles = () => {
         />
       </div>
 
-      {/* Modal de Detalles (Existente) */}
       <RoleDetailsModal
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
@@ -226,12 +193,11 @@ const GestionRoles = () => {
         permisos={rolePermissions}
       />
 
-      {/* 7. Nuevo Modal de Creación */}
+      {/* ✅ onRolCreated conectado — dispara refresh() automáticamente */}
       <RoleCreateModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSave={handleSaveNewRole}
-        permisosDisponibles={groupedPermissions}
+        onRolCreated={handleRolCreated}
       />
     </div>
   );
