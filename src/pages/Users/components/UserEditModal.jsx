@@ -1,31 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
 } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../../../components/ui/select";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import {
-  Edit2,
-  User,
-  Mail,
-  ShieldCheck,
-  Briefcase,
-  Save,
-  AlertCircle,
+  Edit2, User, Mail, ShieldCheck, Briefcase,
+  Save, AlertCircle, CheckCircle2,
 } from "lucide-react";
+// ✅ ELIMINADO: import SuccessToast — ya no vive aquí
 
 const UserEditModal = ({
   isOpen,
@@ -39,10 +27,36 @@ const UserEditModal = ({
   loading,
   getAvatarColor,
   getInitials,
+  onSaveSuccess, // ✅ NUEVA PROP
 }) => {
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  // ✅ ELIMINADO: const [toast, setToast] = useState(...)
+
   if (!usuario) return null;
 
+  const handleSave = async () => {
+    const result = await onSubmit();
+
+    if (result === true) {
+      setSaveSuccess(true);
+      const updatedName = formData.nombreUsuario;
+
+      setTimeout(() => {
+        onClose();
+
+        setTimeout(() => {
+          onSaveSuccess(updatedName); // ✅ Delega el toast al padre
+
+          setTimeout(() => {
+            setSaveSuccess(false);
+          }, 4500);
+        }, 300);
+      }, 800);
+    }
+  };
+
   return (
+    // ✅ ELIMINADO: el <SuccessToast> que estaba aquí dentro
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className="sm:max-w-[500px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl"
@@ -88,9 +102,7 @@ const UserEditModal = ({
                 </p>
               </div>
               <p className="text-xs text-gray-400 mt-0.5">
-                {usuario.idCliente === null
-                  ? "Personal Interno"
-                  : "Cliente Asociado"}
+                {usuario.idCliente === null ? "Personal Interno" : "Cliente Asociado"}
               </p>
             </div>
           </div>
@@ -148,25 +160,19 @@ const UserEditModal = ({
                 className="border-gray-200"
                 style={{ backgroundColor: "#ffffff", color: "#111827" }}
               >
-                {listaRoles.length === 0 ? (
-                  <div className="p-2 text-center text-sm text-gray-400">
-                    Cargando roles...
-                  </div>
-                ) : (
-                  listaRoles.map((rol) => (
-                    <SelectItem
-                      key={rol.idRol}
-                      value={rol.idRol.toString()}
-                      className="text-gray-800 focus:bg-emerald-50 focus:text-emerald-700"
-                      style={{ backgroundColor: "#ffffff", color: "#1f2937" }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-violet-400" />
-                        <span>{rol.nombreRol}</span>
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
+                {listaRoles.map((rol) => (
+                  <SelectItem
+                    key={rol.idRol}
+                    value={rol.idRol.toString()}
+                    className="text-gray-800 focus:bg-emerald-50 focus:text-emerald-700"
+                    style={{ backgroundColor: "#ffffff", color: "#1f2937" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-violet-400" />
+                      <span>{rol.nombreRol}</span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -175,8 +181,7 @@ const UserEditModal = ({
           <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
             <AlertCircle className="h-4 w-4 text-blue-500 shrink-0" />
             <span className="text-xs text-blue-600">
-              Todos los campos son obligatorios. Los cambios se aplicaran
-              inmediatamente.
+              Todos los campos son obligatorios. Los cambios se aplicaran inmediatamente.
             </span>
           </div>
         </div>
@@ -186,20 +191,27 @@ const UserEditModal = ({
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={loading || saveSuccess}
             className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
           >
             Cancelar
           </Button>
           <Button
-            onClick={onSubmit}
-            disabled={loading}
-            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-sm"
+            onClick={handleSave}
+            disabled={loading || saveSuccess}
+            className={`flex-1 font-semibold shadow-sm transition-all duration-300 ${
+              saveSuccess ? "bg-emerald-600" : "bg-emerald-500 hover:bg-emerald-600"
+            } text-white`}
           >
             {loading ? (
               <div className="flex items-center gap-2">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 Guardando...
+              </div>
+            ) : saveSuccess ? (
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Actualizado
               </div>
             ) : (
               <div className="flex items-center gap-2">

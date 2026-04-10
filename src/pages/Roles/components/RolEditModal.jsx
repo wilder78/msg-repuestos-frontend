@@ -13,14 +13,13 @@ import { Textarea } from "../../../components/ui/textarea";
 import {
   ShieldCheck,
   Loader2,
-  Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Palette,
-  CheckCircle2,
+  X,
 } from "lucide-react";
 
-// --- Helpers ---
 const getAuthToken = () =>
   localStorage.getItem("token") || sessionStorage.getItem("token") || null;
 
@@ -39,29 +38,18 @@ const authFetch = (url, options = {}) => {
 const groupPermissionsByModule = (permissions) => {
   if (!permissions) return {};
   return permissions.reduce((acc, perm) => {
-    const nombre = perm.nombre || "";
+    const nombre = perm.nombre || perm.name || "";
     const module =
       perm.modulo ||
       perm.module ||
       (nombre.includes("_") ? nombre.split("_")[0] : "General");
-    if (!acc[module]) acc[module] = [];
-    acc[module].push(perm);
+    const moduleName = module.charAt(0).toUpperCase() + module.slice(1);
+    if (!acc[moduleName]) acc[moduleName] = [];
+    acc[moduleName].push(perm);
     return acc;
   }, {});
 };
 
-const COLOR_OPTIONS = [
-  { label: "Esmeralda", value: "bg-emerald-500", hex: "#10b981" },
-  { label: "Azul", value: "bg-blue-500", hex: "#3b82f6" },
-  { label: "Rojo", value: "bg-red-500", hex: "#ef4444" },
-  { label: "Ámbar", value: "bg-amber-500", hex: "#f59e0b" },
-  { label: "Violeta", value: "bg-violet-500", hex: "#8b5cf6" },
-  { label: "Rosa", value: "bg-rose-500", hex: "#f43f5e" },
-  { label: "Cian", value: "bg-cyan-500", hex: "#06b6d4" },
-  { label: "Slate", value: "bg-slate-400", hex: "#94a3b8" },
-];
-
-// --- Sub-componente PermissionGroup (sin cambios) ---
 const PermissionGroup = ({
   moduleName,
   permissions,
@@ -118,7 +106,9 @@ const PermissionGroup = ({
                       : "border-slate-300 bg-white hover:border-emerald-400"
                   }`}
                 >
-                  {isSelected && <Check className="h-2.5 w-2.5 text-white" />}
+                  {isSelected && (
+                    <CheckCircle2 className="h-2.5 w-2.5 text-white" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-slate-700">
@@ -139,43 +129,40 @@ const PermissionGroup = ({
   );
 };
 
-// --- Componente Principal Adaptado ---
-const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
-  const [nombre, setNombre] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
+const RolEditModal = ({
+  isOpen,
+  onClose,
+  rol,
+  allPermissions = [],
+  assignedPermissions = [],
+  onRolUpdated,
+}) => {
+  const [nombre, setNombre] = useState(rol?.nombre || "");
+  const [descripcion, setDescripcion] = useState(rol?.descripcion || "");
   const [selectedPermIds, setSelectedPermIds] = useState([]);
-  const [allPermissions, setAllPermissions] = useState([]);
   const [loadingPerms, setLoadingPerms] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errors, setErrors] = useState({});
+  const [permissionsList, setPermissionsList] = useState(allPermissions || []);
 
-  const fetchPermissions = useCallback(async () => {
-    setLoadingPerms(true);
-    try {
-      const res = await authFetch("http://localhost:8080/api/permissions");
-      if (!res.ok) throw new Error("Error al obtener permisos");
-      const data = await res.json();
-      setAllPermissions(data.data || data.permissions || data || []);
-    } catch (err) {
-      console.error("Error cargando permisos:", err);
-    } finally {
-      setLoadingPerms(false);
-    }
-  }, []);
+  const initState = useCallback(() => {
+    setNombre(rol?.nombre || "");
+    setDescripcion(rol?.descripcion || "");
+    const assignedIds = assignedPermissions
+      .map((perm) => perm.idPermiso || perm.id_permiso || perm.id)
+      .filter(Boolean);
+    setSelectedPermIds(assignedIds);
+    setPermissionsList(allPermissions || []);
+    setErrors({});
+    setSaveSuccess(false);
+  }, [rol, assignedPermissions, allPermissions]);
 
   useEffect(() => {
     if (isOpen) {
-      fetchPermissions();
-      setNombre("");
-      setDescripcion("");
-      setSelectedColor(COLOR_OPTIONS[0]);
-      setSelectedPermIds([]);
-      setErrors({});
-      setSaveSuccess(false);
+      initState();
     }
-  }, [isOpen, fetchPermissions]);
+  }, [isOpen, initState]);
 
   const handleTogglePerm = (permId) => {
     setSelectedPermIds((prev) =>
@@ -184,6 +171,27 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
         : [...prev, permId],
     );
   };
+
+  const fetchPermissions = useCallback(async () => {
+    if (permissionsList && permissionsList.length > 0) return;
+    setLoadingPerms(true);
+    try {
+      const res = await authFetch("http://localhost:8080/api/permissions");
+      if (!res.ok) throw new Error("Error al obtener permisos");
+      const data = await res.json();
+      setPermissionsList(data.data || data.permissions || data || []);
+    } catch (err) {
+      console.error("Error cargando permisos:", err);
+    } finally {
+      setLoadingPerms(false);
+    }
+  }, [permissionsList]);
+
+  useEffect(() => {
+    if (isOpen && (!permissionsList || permissionsList.length === 0)) {
+      fetchPermissions();
+    }
+  }, [isOpen, permissionsList, fetchPermissions]);
 
   const handleSubmit = async () => {
     if (!nombre.trim()) {
@@ -195,64 +203,77 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
     setErrors({});
 
     try {
-      const rolPayload = {
+      const updatedRole = {
         nombreRol: nombre.trim(),
-        idEstado: "1",
+        descripcion: descripcion.trim(),
+        idEstado: rol?.idEstado || 1,
       };
 
-      const rolRes = await authFetch("http://localhost:8080/api/roles", {
-        method: "POST",
-        body: JSON.stringify(rolPayload),
-      });
+      const response = await authFetch(
+        `http://localhost:8080/api/roles/${rol?.id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(updatedRole),
+        },
+      );
 
-      const rolData = await rolRes.json();
-      if (!rolRes.ok)
-        throw new Error(rolData.message || "Error al crear el rol");
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.message || "Error al actualizar el rol");
 
-      const nuevoRolId =
-        rolData.idRol ||
-        rolData.id ||
-        (rolData.data && (rolData.data.idRol || rolData.data.id));
-      if (!nuevoRolId) throw new Error("Rol creado, pero no se recibió el ID.");
+      const currentAssignedIds = assignedPermissions
+        .map((perm) => perm.idPermiso || perm.id_permiso || perm.id)
+        .filter(Boolean);
+      const idsToAdd = selectedPermIds.filter(
+        (id) => !currentAssignedIds.includes(id),
+      );
+      const idsToRemove = currentAssignedIds.filter(
+        (id) => !selectedPermIds.includes(id),
+      );
 
-      if (selectedPermIds.length > 0) {
-        const assignPromises = selectedPermIds.map((permId) =>
-          authFetch("http://localhost:8080/api/role-permissions/assign", {
-            method: "POST",
-            body: JSON.stringify({
-              idRol: Number(nuevoRolId),
-              idPermiso: Number(permId),
+      if (idsToRemove.length > 0) {
+        await Promise.all(
+          idsToRemove.map((permId) =>
+            authFetch("http://localhost:8080/api/role-permissions/", {
+              method: "DELETE",
+              body: JSON.stringify({ idRol: rol?.id, idPermiso: permId }),
             }),
-          }),
+          ),
         );
-        await Promise.all(assignPromises);
+      }
+
+      if (idsToAdd.length > 0) {
+        await Promise.all(
+          idsToAdd.map((permId) =>
+            authFetch("http://localhost:8080/api/role-permissions/assign", {
+              method: "POST",
+              body: JSON.stringify({ idRol: rol?.id, idPermiso: permId }),
+            }),
+          ),
+        );
       }
 
       setSaveSuccess(true);
-
-      // ✅ MODIFICADO: Llamamos a onRolCreated pasando el nombre para el toast del padre
-      const nombreFinal = nombre.trim();
-
       setTimeout(() => {
-        onClose(); // Primero cerramos el modal
-        // Pequeño delay para asegurar que el modal se cerró antes de disparar el refresh y toast
-        if (onRolCreated) onRolCreated(nombreFinal);
+        onClose();
+        if (onRolUpdated) onRolUpdated(nombre.trim());
       }, 700);
     } catch (err) {
-      setErrors({ submit: err.message });
-      setSaveSuccess(false);
+      setErrors({ submit: err.message || "No se pudo actualizar el rol" });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const groupedPermissions = groupPermissionsByModule(allPermissions);
+  const groupedPermissions = groupPermissionsByModule(permissionsList);
   const totalSelected = selectedPermIds.length;
+
+  if (!rol) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl">
-        <div className="relative bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-b border-emerald-100">
+        <div className="relative bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100">
           <DialogHeader className="relative p-6 pb-4">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
@@ -260,13 +281,19 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
               </div>
               <div>
                 <DialogTitle className="text-2xl font-bold text-slate-800">
-                  Crear Nuevo Rol
+                  Editar Rol
                 </DialogTitle>
                 <DialogDescription className="text-slate-500 text-sm mt-1">
-                  Define un nuevo rol con permisos específicos
+                  Modifica el nombre, la descripción y los permisos del rol.
                 </DialogDescription>
               </div>
             </div>
+            <button
+              onClick={onClose}
+              className="absolute right-4 top-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </DialogHeader>
         </div>
 
@@ -289,21 +316,10 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-                <Palette className="h-3.5 w-3.5" /> Color
+                <Palette className="h-3.5 w-3.5" /> Estado actual
               </label>
-              <div className="flex gap-1.5 flex-wrap max-w-[160px]">
-                {COLOR_OPTIONS.map((color) => (
-                  <button
-                    key={color.value}
-                    type="button"
-                    onClick={() => setSelectedColor(color)}
-                    className={`h-6 w-6 rounded-full border-2 transition-all ${color.value} ${
-                      selectedColor.value === color.value
-                        ? "ring-2 ring-emerald-400 border-white scale-110"
-                        : "border-transparent"
-                    }`}
-                  />
-                ))}
+              <div className="text-sm text-slate-500">
+                {rol.estado || "Activo"}
               </div>
             </div>
           </div>
@@ -373,14 +389,14 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
           >
             {saveSuccess ? (
               <>
-                <CheckCircle2 className="h-4 w-4 mr-2" /> Rol creado
+                <CheckCircle2 className="h-4 w-4 mr-2" /> Guardado
               </>
             ) : isSaving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" /> Guardando...
               </>
             ) : (
-              "Crear Rol"
+              "Guardar cambios"
             )}
           </Button>
         </DialogFooter>
@@ -389,4 +405,4 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
   );
 };
 
-export default RolCreateModal;
+export default RolEditModal;

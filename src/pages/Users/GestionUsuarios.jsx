@@ -1,25 +1,22 @@
 import React, { useState } from "react";
-import { Button } from "../../components/ui/button";
-import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { Users } from "lucide-react";
 
-// Hook personalizado e imports de componentes compartidos
 import { useUsers } from "../../hooks/useUsers";
 import PageHeader from "../../components/shared/PageHeader";
 import TableToolbar from "../../components/shared/TableToolbar";
 import TablePagination from "../../components/shared/TablePagination";
 
-// Componentes del módulo
 import UserCreateModal from "./components/UserCreateModal";
 import UserDetailsModal from "./components/UserDetailsModal";
 import UserEditModal from "./components/UserEditModal";
 import UserDeleteModal from "./components/UserDeleteModal";
 import UserTable from "./components/UserTable";
+import SuccessToast from "../../components/ui/SuccessToast"; // ✅ MOVIDO AQUÍ
 
 const INITIAL_CREATE_STATE = {
   nombreUsuario: "",
   email: "",
   password: "",
-  confirmPassword: "",
   id_rol: "",
   idEstado: "1",
 };
@@ -43,7 +40,32 @@ const GestionUsuarios = () => {
   const [editFormData, setEditFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
 
-  // --- Funciones de Control ---
+  // ✅ NUEVO: estado del toast en el padre
+  const [editToast, setEditToast] = useState({ visible: false, userName: "" });
+
+  // ✅ NUEVO: handler que recibe el modal y activa el toast
+  const handleUserSaveSuccess = (name) => {
+    setEditToast({ visible: true, userName: name });
+    setTimeout(() => {
+      setEditToast((prev) => ({ ...prev, visible: false }));
+    }, 4500);
+  };
+
+  // ✅ NUEVO: toast para creación (se suma al de edición que ya existe)
+  const [createToast, setCreateToast] = useState({
+    visible: false,
+    userName: "",
+  });
+
+  const handleUserCreateSuccess = (name) => {
+    setCreateToast({ visible: true, userName: name });
+    setTimeout(() => {
+      setCreateToast((prev) => ({ ...prev, visible: false }));
+    }, 4500);
+  };
+
+  // ─── Control de Modales ───────────────────────────────────────────────────
+
   const handleCreateUser = () => toggleModal("create", true);
 
   const toggleModal = (type, isOpen, user = null) => {
@@ -56,12 +78,49 @@ const GestionUsuarios = () => {
         idEstado: user.idEstado?.toString() || "1",
       });
     }
+    if (!isOpen && type === "create") {
+      setCreateFormData(INITIAL_CREATE_STATE);
+    }
     setModals((prev) => ({ ...prev, [type]: isOpen }));
   };
 
-  // ─── Handlers de Acciones ──────────────────────────────────────────────────
+  // ─── Handlers de Acciones ─────────────────────────────────────────────────
+
+  const onCreateSubmit = async () => {
+    if (!createFormData.id_rol) return false;
+
+    setActionLoading(true);
+    try {
+      const res = await authFetch("http://localhost:8080/api/users/register", {
+        method: "POST",
+        body: JSON.stringify({
+          nombreUsuario: createFormData.nombreUsuario,
+          email: createFormData.email,
+          password: createFormData.password,
+          idRol: parseInt(createFormData.id_rol, 10),
+          idEstado: parseInt(createFormData.idEstado, 10),
+        }),
+      });
+
+      if (res.ok) {
+        const newUser = await res.json();
+        setUsers((prev) => [newUser.data || newUser, ...prev]);
+        toggleModal("create", false);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error al crear usuario:", error);
+      return false;
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const onEditSubmit = async () => {
+    if (!editFormData.id_rol) return false;
+
     setActionLoading(true);
     try {
       const res = await authFetch(
@@ -69,30 +128,35 @@ const GestionUsuarios = () => {
         {
           method: "PUT",
           body: JSON.stringify({
-            ...editFormData,
-            idRol: parseInt(editFormData.id_rol),
-            idEstado: parseInt(editFormData.idEstado),
+            nombreUsuario: editFormData.nombreUsuario,
+            email: editFormData.email,
+            idRol: parseInt(editFormData.id_rol, 10),
+            idEstado: parseInt(editFormData.idEstado, 10),
           }),
         },
       );
+
       if (res.ok) {
-        // Actualizamos el estado local para que la tabla se refresque sin recargar
         setUsers((prev) =>
           prev.map((u) =>
             u.idUsuario === selectedUser.idUsuario
               ? {
                   ...u,
-                  ...editFormData,
-                  id_rol: parseInt(editFormData.id_rol),
-                  idEstado: parseInt(editFormData.idEstado),
+                  nombreUsuario: editFormData.nombreUsuario,
+                  email: editFormData.email,
+                  id_rol: parseInt(editFormData.id_rol, 10),
+                  idEstado: parseInt(editFormData.idEstado, 10),
                 }
               : u,
           ),
         );
-        toggleModal("edit", false);
+        return true;
       }
+
+      return false;
     } catch (error) {
       console.error("Error al editar usuario:", error);
+      return false;
     } finally {
       setActionLoading(false);
     }
@@ -105,7 +169,7 @@ const GestionUsuarios = () => {
         `http://localhost:8080/api/users/${user.idUsuario}`,
         {
           method: "PUT",
-          body: JSON.stringify({ ...user, idEstado: nextStatus }),
+          body: JSON.stringify({ idEstado: nextStatus }),
         },
       );
       if (res.ok) {
@@ -116,29 +180,7 @@ const GestionUsuarios = () => {
         );
       }
     } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const onCreateSubmit = async () => {
-    setActionLoading(true);
-    try {
-      const res = await authFetch("http://localhost:8080/api/users/register", {
-        method: "POST",
-        body: JSON.stringify({
-          ...createFormData,
-          idRol: parseInt(createFormData.id_rol),
-          idEstado: parseInt(createFormData.idEstado),
-        }),
-      });
-      if (res.ok) {
-        const newUser = await res.json();
-        setUsers((prev) => [newUser.data || newUser, ...prev]);
-        toggleModal("create", false);
-        setCreateFormData(INITIAL_CREATE_STATE);
-      }
-    } finally {
-      setActionLoading(false);
+      console.error("Error al cambiar estado:", err);
     }
   };
 
@@ -157,12 +199,15 @@ const GestionUsuarios = () => {
         );
         toggleModal("delete", false);
       }
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
     } finally {
       setActionLoading(false);
     }
   };
 
-  // ─── Helpers ─────────────────────────────────────────────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
   const getInitials = (n) =>
     n
       ?.split(" ")
@@ -170,6 +215,7 @@ const GestionUsuarios = () => {
       .join("")
       .toUpperCase()
       .slice(0, 2) || "??";
+
   const getAvatarColor = (id) => {
     const colors = [
       "bg-emerald-500",
@@ -195,6 +241,15 @@ const GestionUsuarios = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
+      {/* ✅ TOAST AQUÍ: vive en el padre, sobrevive al cierre del modal */}
+      {/* Toast para creación */}
+      <SuccessToast
+        visible={createToast.visible}
+        title="Usuario registrado"
+        message={`El usuario "${createToast.userName}" ha sido creado correctamente.`}
+        onClose={() => setCreateToast((prev) => ({ ...prev, visible: false }))}
+      />
+
       <PageHeader
         icon={Users}
         title="Gestión de Usuarios"
@@ -205,7 +260,6 @@ const GestionUsuarios = () => {
 
       <div className="flex-1 p-8 overflow-auto">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
-          {/* Reemplazo de la barra de búsqueda manual por el componente genérico */}
           <TableToolbar
             title="Usuarios del Sistema"
             count={filteredUsers.length}
@@ -229,7 +283,6 @@ const GestionUsuarios = () => {
             onToggleStatus={handleToggleStatus}
           />
 
-          {/* PAGINATION */}
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -255,6 +308,7 @@ const GestionUsuarios = () => {
         }
         onSubmit={onCreateSubmit}
         loading={actionLoading}
+        onSaveSuccess={handleUserCreateSuccess} // ✅ NUEVA PROP
       />
 
       <UserEditModal
@@ -276,6 +330,7 @@ const GestionUsuarios = () => {
         loading={actionLoading}
         getInitials={getInitials}
         getAvatarColor={getAvatarColor}
+        onSaveSuccess={handleUserSaveSuccess} // ✅ NUEVA PROP
       />
 
       <UserDetailsModal
