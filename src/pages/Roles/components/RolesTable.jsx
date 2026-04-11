@@ -115,6 +115,8 @@ const RolesTable = ({
                 onView={onView}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                disabledEdit={rol.idEstado !== 1}
+                disabledDelete={rol.idEstado !== 1}
                 labels={{
                   view: "Ver detalles",
                   edit: "Editar rol",
