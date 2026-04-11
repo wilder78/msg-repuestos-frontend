@@ -11,7 +11,7 @@ import UserDetailsModal from "./components/UserDetailsModal";
 import UserEditModal from "./components/UserEditModal";
 import UserDeleteModal from "./components/UserDeleteModal";
 import UserTable from "./components/UserTable";
-import SuccessToast from "../../components/ui/SuccessToast"; // ✅ MOVIDO AQUÍ
+import SuccessToast from "../../components/ui/SuccessToast";
 
 const INITIAL_CREATE_STATE = {
   nombreUsuario: "",

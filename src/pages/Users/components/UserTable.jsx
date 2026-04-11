@@ -118,6 +118,8 @@ const UserTable = ({
                 onView={onView}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                disabledEdit={u.idEstado !== 1}
+                disabledDelete={u.idEstado !== 1}
                 labels={{
                   view: "Ver usuario",
                   edit: "Editar usuario",

@@ -26,6 +26,8 @@ const ActionButtons = ({
   onEdit,
   onDelete,
   item,
+  disabledEdit = false,
+  disabledDelete = false,
   labels = { view: "Ver detalles", edit: "Editar", delete: "Eliminar" },
 }) => {
   return (
@@ -48,9 +50,11 @@ const ActionButtons = ({
       <Button
         variant="ghost"
         size="icon"
-        title={labels.edit}
-        className="h-8 w-8 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+        title={disabledEdit ? `${labels.edit} (Inactivo)` : labels.edit}
+        className={`h-8 w-8 text-emerald-500 ${disabledEdit ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-100 hover:text-emerald-700"}`}
+        disabled={disabledEdit}
         onClick={(e) => {
+          if (disabledEdit) return;
           e.stopPropagation();
           onEdit(item);
         }}
@@ -62,9 +66,11 @@ const ActionButtons = ({
       <Button
         variant="ghost"
         size="icon"
-        title={labels.delete}
-        className="h-8 w-8 text-red-400 hover:bg-red-100 hover:text-red-600"
+        title={disabledDelete ? `${labels.delete} (Inactivo)` : labels.delete}
+        className={`h-8 w-8 text-red-400 ${disabledDelete ? "opacity-50 cursor-not-allowed" : "hover:bg-red-100 hover:text-red-600"}`}
+        disabled={disabledDelete}
         onClick={(e) => {
+          if (disabledDelete) return;
           e.stopPropagation();
           onDelete(item);
         }}
