@@ -1,9 +1,10 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 import DashboardContent from "./pages/Dashboard/DashboardContent";
 import GestionUsuarios from "./pages/Users/GestionUsuarios";
+import GestionZona from "./pages/Area/GestionZona";
 // Importamos el nuevo componente de Roles
 import GestionRoles from "./pages/Roles/GestionRoles";
 
@@ -33,6 +34,17 @@ export default function App() {
           </DashboardLayout>
         }
       />
+
+      {/* Gestión de Zonas */}
+      <Route
+        path="/dashboard/zonas"
+        element={
+          <DashboardLayout>
+            <GestionZona />
+          </DashboardLayout>
+        }
+      />
+      <Route path="/zonas" element={<Navigate to="/dashboard/zonas" replace />} />
 
       {/* Gestión de Roles y Permisos */}
       <Route
