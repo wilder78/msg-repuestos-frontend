@@ -6,6 +6,8 @@ import DashboardContent from "./pages/Dashboard/DashboardContent";
 import GestionUsuarios from "./pages/Users/GestionUsuarios";
 // Importamos el nuevo componente de Roles
 import GestionRoles from "./pages/Roles/GestionRoles";
+// Importamos el componente de Empleados
+import GestionEmpleados from "./pages/Employees/GestionEmpleados";
 
 export default function App() {
   return (
@@ -40,6 +42,16 @@ export default function App() {
         element={
           <DashboardLayout>
             <GestionRoles />
+          </DashboardLayout>
+        }
+      />
+
+      {/* Gestión de Empleados */}
+      <Route
+        path="/dashboard/empleados"
+        element={
+          <DashboardLayout>
+            <GestionEmpleados />
           </DashboardLayout>
         }
       />
