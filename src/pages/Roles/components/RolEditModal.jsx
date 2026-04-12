@@ -272,32 +272,29 @@ const RolEditModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl">
-        <div className="relative bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100">
-          <DialogHeader className="relative p-6 pb-4">
+      <DialogContent
+        className="sm:max-w-[700px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl"
+        style={{ backgroundColor: "#ffffff" }}
+      >
+        <div className="bg-white border-b border-gray-100 px-6 pt-6 pb-4">
+          <DialogHeader>
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
                 <ShieldCheck className="h-6 w-6 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-bold text-slate-800">
+                <DialogTitle className="text-2xl font-bold text-slate-900">
                   Editar Rol
                 </DialogTitle>
-                <DialogDescription className="text-slate-500 text-sm mt-1">
+                <DialogDescription className="text-gray-400 text-sm mt-0.5">
                   Modifica el nombre, la descripción y los permisos del rol.
                 </DialogDescription>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="absolute right-4 top-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto bg-white">
+        <div className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto bg-white">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-start">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-slate-700">
@@ -370,22 +367,23 @@ const RolEditModal = ({
           )}
         </div>
 
-        <DialogFooter className="p-6 bg-slate-50 border-t gap-3">
+        <DialogFooter className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSaving || saveSuccess}
+            className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isSaving || saveSuccess || !nombre.trim()}
-            className={`min-w-[140px] transition-all duration-300 ${
+            className={`flex-1 font-semibold shadow-sm transition-all duration-300 ${
               saveSuccess
-                ? "bg-emerald-500 text-white"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white"
-            }`}
+                ? "bg-emerald-600"
+                : "bg-emerald-500 hover:bg-emerald-600"
+            } text-white`}
           >
             {saveSuccess ? (
               <>

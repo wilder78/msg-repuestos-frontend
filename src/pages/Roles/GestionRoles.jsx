@@ -339,7 +339,7 @@ const GestionRoles = () => {
       <RoleCreateModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onRolCreated={handleRolCreated} // ✅ Ahora el hijo le pasará el nombre del rol aquí
+        onRolCreated={handleRolCreated} 
       />
     </div>
   );

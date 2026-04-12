@@ -3,7 +3,10 @@ import { UserCog, Loader2 } from "lucide-react";
 import PageHeader from "../../components/shared/PageHeader";
 import TableToolbar from "../../components/shared/TableToolbar";
 import TablePagination from "../../components/shared/TablePagination";
+import SuccessToast from "../../components/ui/SuccessToast";
 import { EmployeeTable } from "./components/EmployeeTable";
+import EmployeeDetailsModal from "./components/EmployeeDetailsModal";
+import EmployeeEditModal from "./components/EmployeeEditModal";
 
 const getAuthToken = () =>
   localStorage.getItem("token") || sessionStorage.getItem("token") || null;
@@ -28,26 +31,10 @@ const mapEmployee = (empleado, userEmailMap = {}) => {
   const userEmail = idUsuario ? userEmailMap[idUsuario] : undefined;
 
   return {
-    id:
-      empleado.idEmpleado ||
-      empleado.id_empleado ||
-      empleado.id ||
-      empleado.idEmployee,
-    nombres:
-      empleado.nombres ||
-      empleado.nombre ||
-      empleado.primerNombre ||
-      empleado.firstName ||
-      "",
-    apellidos:
-      empleado.apellidos || empleado.apellido || empleado.lastName || "",
-    foto:
-      empleado.foto ||
-      empleado.avatar ||
-      empleado.fotoPerfil ||
-      empleado.photo ||
-      "",
-    ciudad: empleado.ciudad || empleado.city || empleado.localidad || "-",
+    id: empleado.idEmpleado || empleado.id || empleado.idEmployee || "",
+    nombres: empleado.nombre || "",
+    apellidos: empleado.apellido || "",
+    foto: "",
     cargo:
       empleado.rolOperativo ||
       empleado.rol_operativo ||
@@ -55,30 +42,15 @@ const mapEmployee = (empleado, userEmailMap = {}) => {
       empleado.puesto ||
       empleado.role ||
       "Sin cargo",
-    email:
-      empleado.email || empleado.correo || empleado.mail || userEmail || "",
-    telefono:
-      empleado.telefono ||
-      empleado.telefonoMovil ||
-      empleado.phone ||
-      empleado.celular ||
-      "",
-    registro:
-      empleado.fechaRegistro ||
-      empleado.createdAt ||
-      empleado.registro ||
-      empleado.fecha_registro ||
-      "",
-    direccion:
-      empleado.direccion ||
-      empleado.address ||
-      [empleado.calle, empleado.numero, empleado.barrio]
-        .filter(Boolean)
-        .join(" ") ||
-      "",
+    email: userEmail || "",
+    telefono: empleado.telefono || "",
+    numeroDocumento: empleado.numeroDocumento || "",
     estado: empleado.activo === false ? "inactivo" : "activo",
     statusId: empleado.activo === false ? 0 : 1,
     idUsuario,
+    disponibilidad: empleado.disponibilidad ?? false,
+    activo: empleado.activo ?? true,
+    idTipoDocumento: empleado.idTipoDocumento,
   };
 };
 
@@ -89,6 +61,17 @@ const GestionEmpleados = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const empleadosPerPage = 8;
+
+  // Modal state
+  const [selectedEmpleado, setSelectedEmpleado] = useState(null);
+  const [modals, setModals] = useState({
+    view: false,
+    edit: false,
+  });
+  const [editToast, setEditToast] = useState({
+    visible: false,
+    empleadoName: "",
+  });
 
   useEffect(() => {
     const loadEmployees = async () => {
@@ -240,6 +223,36 @@ const GestionEmpleados = () => {
     }
   };
 
+  // ─── Control de Modales ───────────────────────────────────────────────────
+
+  const toggleModal = (type, isOpen, empleado = null) => {
+    setSelectedEmpleado(empleado);
+    setModals((prev) => ({ ...prev, [type]: isOpen }));
+  };
+
+  const handleViewEmpleado = (empleado) => {
+    toggleModal("view", true, empleado);
+  };
+
+  const handleEditEmpleado = (empleado) => {
+    toggleModal("edit", true, empleado);
+  };
+
+  const handleEmpleadoUpdated = (updatedEmpleado) => {
+    setEmpleados((prev) =>
+      prev.map((emp) =>
+        emp.id === updatedEmpleado.id ? { ...emp, ...updatedEmpleado } : emp,
+      ),
+    );
+  };
+
+  const handleEmpleadoSaveSuccess = (name) => {
+    setEditToast({ visible: true, empleadoName: name });
+    setTimeout(() => {
+      setEditToast((prev) => ({ ...prev, visible: false }));
+    }, 4500);
+  };
+
   return (
     <div className="p-8 space-y-6 bg-[#f8f9fa] min-h-screen">
       <PageHeader
@@ -276,8 +289,8 @@ const GestionEmpleados = () => {
         ) : (
           <EmployeeTable
             empleados={paginatedEmpleados}
-            onView={(empleado) => console.log("Ver empleado", empleado)}
-            onEdit={(empleado) => console.log("Editar empleado", empleado)}
+            onView={handleViewEmpleado}
+            onEdit={handleEditEmpleado}
             onDelete={(empleado) => console.log("Eliminar empleado", empleado)}
             onToggleStatus={handleToggleStatus}
             getCargoStyle={getCargoStyle}
@@ -290,6 +303,28 @@ const GestionEmpleados = () => {
           onPageChange={(page) => setCurrentPage(page)}
         />
       </div>
+
+      <SuccessToast
+        visible={editToast.visible}
+        title="Empleado actualizado"
+        message={`Los cambios de "${editToast.empleadoName}" se aplicaron correctamente.`}
+        onClose={() => setEditToast((prev) => ({ ...prev, visible: false }))}
+      />
+
+      <EmployeeDetailsModal
+        isOpen={modals.view}
+        onClose={() => toggleModal("view", false)}
+        empleado={selectedEmpleado}
+        getCargoStyle={getCargoStyle}
+      />
+
+      <EmployeeEditModal
+        isOpen={modals.edit}
+        onClose={() => toggleModal("edit", false)}
+        empleado={selectedEmpleado}
+        onEmpleadoUpdated={handleEmpleadoUpdated}
+        onSaveSuccess={handleEmpleadoSaveSuccess}
+      />
     </div>
   );
 };
