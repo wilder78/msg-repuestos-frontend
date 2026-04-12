@@ -72,7 +72,7 @@ const navigation = [
     items: [
       { icon: Route, label: "Rutas de Venta", href: "/rutas" },
       { icon: MapPin, label: "Zonas", href: "/zonas" },
-      { icon: UserCog, label: "Gestión de Empleados", href: "/empleados" },
+      { icon: UserCog, label: "Gestión de Empleados", href: "/dashboard/empleados" },
     ],
   },
   {

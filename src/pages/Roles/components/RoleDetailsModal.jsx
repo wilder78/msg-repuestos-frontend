@@ -4,9 +4,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "../../../components/ui/dialog";
 import { Badge } from "../../../components/ui/badge";
-import { Shield, CheckCircle2, X } from "lucide-react";
+import { Separator } from "../../../components/ui/separator";
+import { Shield, CheckCircle2, Award } from "lucide-react";
+import InfoCard from "../../Users/components/InfoCard";
 
 const RoleDetailsModal = ({ isOpen, onClose, rol, permisos = [] }) => {
   if (!rol || !isOpen) return null;
@@ -21,117 +24,107 @@ const RoleDetailsModal = ({ isOpen, onClose, rol, permisos = [] }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      {/* Se eliminó [&>button]:hidden para permitir que los botones internos funcionen */}
       <DialogContent
-        className="max-w-3xl max-h-[85vh] overflow-y-auto bg-white p-0 rounded-2xl border border-slate-200 shadow-lg"
-        style={{ boxShadow: "0 4px 32px 0 rgba(0,0,0,0.08)" }}
+        className="sm:max-w-[650px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl"
+        style={{
+          backgroundColor: "white",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        }}
       >
-        {/* Header — fondo blanco con botón de cerrar manual */}
-        <DialogHeader className="px-7 pt-6 pb-4 border-b border-slate-100/60 bg-white rounded-t-2xl sticky top-0 z-10">
-          <div className="flex items-start justify-between w-full">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50">
-                <Shield className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <DialogTitle className="text-lg font-bold text-slate-800 tracking-tight leading-tight">
-                  Detalles del Rol — {rol.nombre}
-                </DialogTitle>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">
-                  Información completa del rol y sus permisos asignados
-                </p>
+        <div className="relative bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-200">
+          <DialogHeader className="p-6 pb-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-slate-900">
+                    Detalles del Rol
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-500 text-sm mt-1">
+                    Información completa del rol y sus permisos
+                  </DialogDescription>
+                </div>
               </div>
             </div>
+          </DialogHeader>
+        </div>
 
-            {/* Botón de cerrar personalizado */}
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </DialogHeader>
-
-        {/* Cuerpo */}
-        <div className="px-7 pb-7 pt-5 space-y-6 bg-white rounded-b-2xl">
-          {/* Panel de información del rol */}
-          <div className="p-5 bg-blue-50 rounded-xl border border-blue-100">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-bold text-blue-700">
-                Información del Rol
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-              <div>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
-                  Nombre
-                </span>
-                <p className="text-sm font-semibold text-slate-800 mt-0.5">
+        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto bg-white">
+          {/* Perfil del Rol */}
+          <div className="bg-gradient-to-br from-slate-50 to-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <Shield className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-slate-900 leading-tight">
                   {rol.nombre}
+                </h3>
+                <p className="text-sm text-slate-600 mt-2 leading-relaxed">
+                  {rol.descripcion || "Sin descripción asignada"}
                 </p>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
-                  Estado
-                </span>
-                <div className="mt-0.5">
+                <div className="flex items-center gap-2 mt-3">
                   <Badge
                     variant="outline"
-                    className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold text-[10px] px-2.5 py-0.5 uppercase tracking-wide rounded-full"
+                    className={`text-[10px] px-2.5 py-0.5 uppercase tracking-wide rounded-full font-semibold ${
+                      rol.estado === "activo" || !rol.estado
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-slate-100 text-slate-600 border-slate-200"
+                    }`}
                   >
                     {rol.estado || "activo"}
                   </Badge>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div className="col-span-2">
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
-                  Descripción
-                </span>
-                <p className="text-sm text-slate-600 mt-0.5 leading-relaxed">
-                  {rol.descripcion || "Sin descripción asignada"}
+          {/* Grid de Información */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Información Básica */}
+            <InfoCard icon={Shield} iconColor="blue" title="Información Básica">
+              <div>
+                <p className="text-xs text-slate-500 mb-1">ID del Rol</p>
+                <p className="text-sm font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md inline-block">
+                  #{rol.idRol || rol.id || "N/A"}
                 </p>
               </div>
-
+              <Separator className="my-2" />
               <div>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
-                  Fecha Creación
-                </span>
-                <p className="text-sm font-semibold text-slate-700 mt-0.5">
+                <p className="text-xs text-slate-500 mb-1">Fecha Creación</p>
+                <p className="text-sm font-semibold text-slate-800">
                   {rol.fechaCreacion || "N/A"}
                 </p>
               </div>
+            </InfoCard>
 
+            {/* Estadísticas */}
+            <InfoCard icon={Award} iconColor="violet" title="Estadísticas">
               <div>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
-                  Permisos Totales
-                </span>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">
-                  {rol.permisosCount || 0}
+                <p className="text-xs text-slate-500 mb-1">Permisos Totales</p>
+                <p className="text-sm font-bold text-slate-800">
+                  {rol.permisosCount || permisos.length || 0}
                 </p>
               </div>
-
-              {rol.usuariosAsignados !== undefined && (
-                <div>
-                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
-                    Usuarios Asignados
-                  </span>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">
-                    {rol.usuariosAsignados}
-                  </p>
-                </div>
-              )}
-            </div>
+              <Separator className="my-2" />
+              <div>
+                <p className="text-xs text-slate-500 mb-1">
+                  Usuarios Asignados
+                </p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {rol.usuariosAsignados || "0"}
+                </p>
+              </div>
+            </InfoCard>
           </div>
 
           {/* Sección de permisos */}
           <div className="space-y-4">
-            <h3 className="font-bold text-slate-800 text-base tracking-tight">
-              Permisos Asignados ({rol.permisosCount || 0})
+            <h3 className="font-bold text-slate-900 text-base tracking-tight flex items-center gap-2">
+              <Shield className="h-4 w-4 text-slate-600" />
+              Permisos Asignados ({rol.permisosCount || permisos.length || 0})
             </h3>
 
             {Object.keys(permisosAgrupados).length > 0 ? (

@@ -49,37 +49,39 @@ const AreaEditModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleModalClose}>
-      <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden rounded-2xl border border-slate-200 shadow-2xl bg-white">
-        <div className="bg-white border-b border-slate-100 px-6 py-5">
+      <DialogContent
+        className="sm:max-w-[500px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl bg-white"
+        style={{ backgroundColor: "#ffffff" }}
+      >
+        <div className="bg-white border-b border-gray-100 px-6 pt-6 pb-4">
           <DialogHeader>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-500 rounded-xl">
-                  <Edit2 className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <DialogTitle className="text-xl font-bold text-slate-900">
-                    Editar Zona
-                  </DialogTitle>
-                  <DialogDescription className="text-sm text-slate-500 mt-1">
-                    Modifica los datos del registro seleccionado.
-                  </DialogDescription>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500 rounded-xl">
+                <Edit2 className="h-5 w-5 text-white" />
               </div>
-              <Button
-                variant="ghost"
-                className="h-10 w-10 rounded-full text-slate-500 hover:bg-slate-100"
-                onClick={handleModalClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div>
+                <DialogTitle className="text-xl font-bold text-slate-900">
+                  Editar Zona
+                </DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 mt-0.5">
+                  Modifica los datos del registro seleccionado.
+                </DialogDescription>
+              </div>
             </div>
           </DialogHeader>
         </div>
 
-        <form className="space-y-5 px-7 py-6 bg-white" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+        <form
+          className="px-6 py-5 space-y-5 bg-white max-h-[65vh] overflow-y-auto"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
           <div className="space-y-2">
-            <Label className="text-sm font-semibold text-slate-700">Nombre de zona</Label>
+            <Label className="text-sm font-semibold text-slate-700">
+              Nombre de zona
+            </Label>
             <Input
               name="nombreZona"
               value={formData.nombreZona}
@@ -90,7 +92,9 @@ const AreaEditModal = ({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold text-slate-700">Descripción</Label>
+            <Label className="text-sm font-semibold text-slate-700">
+              Descripción
+            </Label>
             <Textarea
               name="descripcion"
               value={formData.descripcion}
@@ -100,22 +104,30 @@ const AreaEditModal = ({
             />
           </div>
 
-          <DialogFooter className="pt-4">
+          <DialogFooter className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               onClick={onClose}
               disabled={loading || saveSuccess}
-              className="bg-slate-100 text-slate-700 hover:bg-slate-200"
+              className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading || saveSuccess}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className={`flex-1 font-semibold shadow-sm transition-all duration-300 ${
+                saveSuccess
+                  ? "bg-emerald-600"
+                  : "bg-emerald-500 hover:bg-emerald-600"
+              } text-white`}
             >
-              {saveSuccess ? "Guardado" : loading ? "Guardando..." : "Guardar cambios"}
+              {saveSuccess
+                ? "Guardado"
+                : loading
+                  ? "Guardando..."
+                  : "Guardar cambios"}
             </Button>
           </DialogFooter>
         </form>

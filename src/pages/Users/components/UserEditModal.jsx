@@ -27,10 +27,10 @@ const UserEditModal = ({
   loading,
   getAvatarColor,
   getInitials,
-  onSaveSuccess, // ✅ NUEVA PROP
+  onSaveSuccess,
 }) => {
   const [saveSuccess, setSaveSuccess] = useState(false);
-  // ✅ ELIMINADO: const [toast, setToast] = useState(...)
+  
 
   if (!usuario) return null;
 
@@ -45,7 +45,7 @@ const UserEditModal = ({
         onClose();
 
         setTimeout(() => {
-          onSaveSuccess(updatedName); // ✅ Delega el toast al padre
+          onSaveSuccess(updatedName); 
 
           setTimeout(() => {
             setSaveSuccess(false);
@@ -56,7 +56,6 @@ const UserEditModal = ({
   };
 
   return (
-    // ✅ ELIMINADO: el <SuccessToast> que estaba aquí dentro
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className="sm:max-w-[500px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl"
