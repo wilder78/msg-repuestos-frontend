@@ -123,7 +123,7 @@ const GestionRoles = () => {
   };
 
   // --- Memorización de datos (sin cambios) ---
-  const groupedPermissions = useMemo(() => {
+  const _groupedPermissions = useMemo(() => {
     if (!allSystemPermissions || allSystemPermissions.length === 0) return [];
     return allSystemPermissions.reduce((acc, perm) => {
       if (!perm || !perm.nombre) return acc;
@@ -248,6 +248,10 @@ const GestionRoles = () => {
           ),
         );
         setIsDeleteOpen(false);
+        showSuccessToast(
+          "Rol inactivado",
+          `El rol "${deleteRole.nombre}" se inactivó correctamente.`,
+        );
       }
     } catch (error) {
       console.error("Error al desactivar rol:", error);
@@ -339,7 +343,7 @@ const GestionRoles = () => {
       <RoleCreateModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onRolCreated={handleRolCreated} 
+        onRolCreated={handleRolCreated}
       />
     </div>
   );
