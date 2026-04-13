@@ -232,12 +232,16 @@ const EmployeeEditModal = ({
                   setFormData((prev) => ({ ...prev, idTipoDocumento: value }))
                 }
               >
-                <SelectTrigger className="w-full border-gray-300 focus:border-emerald-400 focus:ring-emerald-400">
+                <SelectTrigger className="w-full bg-slate-50 border-slate-200 text-slate-900 shadow-sm focus:border-emerald-400 focus:ring-emerald-400">
                   <SelectValue placeholder="Seleccionar tipo" />
                 </SelectTrigger>
-                <SelectContent className="border-gray-200">
+                <SelectContent className="border-slate-200 bg-white text-slate-950 shadow-lg">
                   {DOCUMENT_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
+                    <SelectItem
+                      key={type.value}
+                      value={type.value}
+                      className="bg-white text-slate-900 hover:bg-slate-100 focus:bg-slate-100 focus:text-slate-900"
+                    >
                       {type.label}
                     </SelectItem>
                   ))}

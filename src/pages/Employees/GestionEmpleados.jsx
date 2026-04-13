@@ -7,6 +7,7 @@ import SuccessToast from "../../components/ui/SuccessToast";
 import { EmployeeTable } from "./components/EmployeeTable";
 import EmployeeDetailsModal from "./components/EmployeeDetailsModal";
 import EmployeeEditModal from "./components/EmployeeEditModal";
+import EmployeeDeleteModal from "./components/EmployeeDeleteModal";
 
 const getAuthToken = () =>
   localStorage.getItem("token") || sessionStorage.getItem("token") || null;
@@ -67,10 +68,13 @@ const GestionEmpleados = () => {
   const [modals, setModals] = useState({
     view: false,
     edit: false,
+    delete: false,
   });
-  const [editToast, setEditToast] = useState({
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [successToast, setSuccessToast] = useState({
     visible: false,
-    empleadoName: "",
+    title: "",
+    message: "",
   });
 
   useEffect(() => {
@@ -246,11 +250,71 @@ const GestionEmpleados = () => {
     );
   };
 
-  const handleEmpleadoSaveSuccess = (name) => {
-    setEditToast({ visible: true, empleadoName: name });
+  const showSuccessToast = (title, message) => {
+    setSuccessToast({ visible: true, title, message });
     setTimeout(() => {
-      setEditToast((prev) => ({ ...prev, visible: false }));
+      setSuccessToast((prev) => ({ ...prev, visible: false }));
     }, 4500);
+  };
+
+  const handleEmpleadoSaveSuccess = (name) => {
+    showSuccessToast(
+      "Empleado actualizado",
+      `Los cambios de "${name}" se aplicaron correctamente.`,
+    );
+  };
+
+  const handleDeleteEmpleado = (empleado) => {
+    toggleModal("delete", true, empleado);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedEmpleado) return;
+    setDeleteLoading(true);
+
+    try {
+      const response = await authFetch(
+        `${EMPLOYEE_ENDPOINT}/${selectedEmpleado.id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ activo: false }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Error al inactivar empleado: ${response.status} ${response.statusText} ${
+            errorText ? `- ${errorText}` : ""
+          }`,
+        );
+      }
+
+      const inactivatedName =
+        `${selectedEmpleado.nombres} ${selectedEmpleado.apellidos}`.trim();
+
+      setEmpleados((prev) =>
+        prev.map((emp) =>
+          emp.id === selectedEmpleado.id
+            ? {
+                ...emp,
+                statusId: 0,
+                estado: "inactivo",
+                activo: false,
+              }
+            : emp,
+        ),
+      );
+      toggleModal("delete", false);
+      showSuccessToast(
+        "Empleado inactivado",
+        `El empleado "${inactivatedName}" se inactivó correctamente.`,
+      );
+    } catch (error) {
+      console.error("Error al inactivar empleado:", error);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -291,7 +355,7 @@ const GestionEmpleados = () => {
             empleados={paginatedEmpleados}
             onView={handleViewEmpleado}
             onEdit={handleEditEmpleado}
-            onDelete={(empleado) => console.log("Eliminar empleado", empleado)}
+            onDelete={handleDeleteEmpleado}
             onToggleStatus={handleToggleStatus}
             getCargoStyle={getCargoStyle}
           />
@@ -305,10 +369,10 @@ const GestionEmpleados = () => {
       </div>
 
       <SuccessToast
-        visible={editToast.visible}
-        title="Empleado actualizado"
-        message={`Los cambios de "${editToast.empleadoName}" se aplicaron correctamente.`}
-        onClose={() => setEditToast((prev) => ({ ...prev, visible: false }))}
+        visible={successToast.visible}
+        title={successToast.title}
+        message={successToast.message}
+        onClose={() => setSuccessToast((prev) => ({ ...prev, visible: false }))}
       />
 
       <EmployeeDetailsModal
@@ -324,6 +388,14 @@ const GestionEmpleados = () => {
         empleado={selectedEmpleado}
         onEmpleadoUpdated={handleEmpleadoUpdated}
         onSaveSuccess={handleEmpleadoSaveSuccess}
+      />
+
+      <EmployeeDeleteModal
+        isOpen={modals.delete}
+        onClose={() => toggleModal("delete", false)}
+        empleado={selectedEmpleado}
+        onConfirm={handleDeleteConfirm}
+        loading={deleteLoading}
       />
     </div>
   );

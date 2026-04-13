@@ -123,6 +123,8 @@ export function EmployeeTable({
                     onView={onView}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    disabledEdit={empleado.statusId !== 1}
+                    disabledDelete={empleado.statusId !== 1}
                     labels={{
                       view: "Ver empleado",
                       edit: "Editar empleado",

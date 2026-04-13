@@ -40,28 +40,31 @@ const GestionUsuarios = () => {
   const [editFormData, setEditFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
 
-  // ✅ NUEVO: estado del toast en el padre
-  const [editToast, setEditToast] = useState({ visible: false, userName: "" });
+  const [toastConfig, setToastConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
 
-  // ✅ NUEVO: handler que recibe el modal y activa el toast
-  const handleUserSaveSuccess = (name) => {
-    setEditToast({ visible: true, userName: name });
+  const showToast = (title, message) => {
+    setToastConfig({ visible: true, title, message });
     setTimeout(() => {
-      setEditToast((prev) => ({ ...prev, visible: false }));
+      setToastConfig((prev) => ({ ...prev, visible: false }));
     }, 4500);
   };
 
-  // ✅ NUEVO: toast para creación (se suma al de edición que ya existe)
-  const [createToast, setCreateToast] = useState({
-    visible: false,
-    userName: "",
-  });
+  const handleUserSaveSuccess = (name) => {
+    showToast(
+      "Usuario actualizado",
+      `Los cambios de "${name}" se aplicaron correctamente.`,
+    );
+  };
 
   const handleUserCreateSuccess = (name) => {
-    setCreateToast({ visible: true, userName: name });
-    setTimeout(() => {
-      setCreateToast((prev) => ({ ...prev, visible: false }));
-    }, 4500);
+    showToast(
+      "Usuario registrado",
+      `El usuario "${name}" ha sido creado correctamente.`,
+    );
   };
 
   // ─── Control de Modales ───────────────────────────────────────────────────
@@ -173,10 +176,17 @@ const GestionUsuarios = () => {
         },
       );
       if (res.ok) {
+        const userName = user.nombreUsuario || "Usuario";
         setUsers((prev) =>
           prev.map((u) =>
             u.idUsuario === user.idUsuario ? { ...u, idEstado: nextStatus } : u,
           ),
+        );
+        showToast(
+          nextStatus === 1 ? "Usuario activado" : "Usuario inactivado",
+          `El usuario "${userName}" se ${
+            nextStatus === 1 ? "activó" : "inactivó"
+          } correctamente.`,
         );
       }
     } catch (err) {
@@ -197,7 +207,12 @@ const GestionUsuarios = () => {
             u.idUsuario === selectedUser.idUsuario ? { ...u, idEstado: 2 } : u,
           ),
         );
+        const deletedName = `${selectedUser.nombreUsuario}`;
         toggleModal("delete", false);
+        showToast(
+          "Usuario inactivado",
+          `El usuario "${deletedName}" se inactivó correctamente.`,
+        );
       }
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
@@ -241,13 +256,11 @@ const GestionUsuarios = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
-      {/* ✅ TOAST AQUÍ: vive en el padre, sobrevive al cierre del modal */}
-      {/* Toast para creación */}
       <SuccessToast
-        visible={createToast.visible}
-        title="Usuario registrado"
-        message={`El usuario "${createToast.userName}" ha sido creado correctamente.`}
-        onClose={() => setCreateToast((prev) => ({ ...prev, visible: false }))}
+        visible={toastConfig.visible}
+        title={toastConfig.title}
+        message={toastConfig.message}
+        onClose={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
       />
 
       <PageHeader
