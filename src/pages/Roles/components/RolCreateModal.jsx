@@ -197,7 +197,8 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
     try {
       const rolPayload = {
         nombreRol: nombre.trim(),
-        idEstado: "1",
+        descripcion: descripcion.trim(),
+        idEstado: 1,
       };
 
       const rolRes = await authFetch("http://localhost:8080/api/roles", {
@@ -251,56 +252,58 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl">
-        <div className="relative bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-b border-emerald-100">
-          <DialogHeader className="relative p-6 pb-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                <ShieldCheck className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-bold text-slate-800">
-                  Crear Nuevo Rol
-                </DialogTitle>
-                <DialogDescription className="text-slate-500 text-sm mt-1">
-                  Define un nuevo rol con permisos específicos
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-        </div>
+      <DialogContent 
+        className="sm:max-w-[650px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl"
+        style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
+      >
+        {/* ── Header ── */}
+        <DialogHeader className="px-7 pt-6 pb-0">
+          <div className="flex items-center gap-2.5 text-emerald-500">
+            <ShieldCheck className="h-5 w-5" />
+            <DialogTitle className="text-[#0f172a] text-lg font-bold">
+              Crear Nuevo Rol
+            </DialogTitle>
+          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            Define un nuevo rol con permisos específicos en el sistema
+          </p>
+        </DialogHeader>
 
-        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto bg-white">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-start">
+        {/* ── Scrollable Content ── */}
+        <div className="px-7 py-6 space-y-6 max-h-[65vh] overflow-y-auto bg-white scrollbar-thin scrollbar-thumb-slate-200">
+          
+          {/* Nombre y Color */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-xs font-semibold text-slate-700">
                 Nombre del Rol <span className="text-emerald-500">*</span>
               </label>
               <Input
-                placeholder="Ej: Supervisor"
+                placeholder="Ej: Supervisor de Ventas"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                className={`border-slate-200 focus:border-emerald-400 ${errors.nombre ? "border-red-400" : ""}`}
+                className={`h-[42px] rounded-xl border-slate-200 focus-visible:ring-emerald-500 ${errors.nombre ? "border-red-400" : ""}`}
               />
               {errors.nombre && (
-                <p className="text-xs text-red-500">{errors.nombre}</p>
+                <p className="text-[11px] text-red-500">{errors.nombre}</p>
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-                <Palette className="h-3.5 w-3.5" /> Color
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Palette className="h-3 w-3 text-slate-400" /> Color de Identificación
               </label>
-              <div className="flex gap-1.5 flex-wrap max-w-[160px]">
+              <div className="flex gap-1.5 flex-wrap max-w-[150px] p-1 bg-slate-50 rounded-lg border border-slate-100">
                 {COLOR_OPTIONS.map((color) => (
                   <button
                     key={color.value}
                     type="button"
+                    title={color.label}
                     onClick={() => setSelectedColor(color)}
-                    className={`h-6 w-6 rounded-full border-2 transition-all ${color.value} ${
+                    className={`h-5 w-5 rounded-full border-2 transition-all duration-200 ${color.value} ${
                       selectedColor.value === color.value
-                        ? "ring-2 ring-emerald-400 border-white scale-110"
-                        : "border-transparent"
+                        ? "ring-2 ring-emerald-400 border-white scale-110 shadow-sm"
+                        : "border-transparent opacity-70 hover:opacity-100"
                     }`}
                   />
                 ))}
@@ -308,80 +311,86 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
             </div>
           </div>
 
+          {/* Descripción */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-slate-700">
-              Descripción
+            <label className="text-xs font-semibold text-slate-700">
+              Descripción del Rol
             </label>
             <Textarea
-              placeholder="Descripción del rol..."
+              placeholder="Describe las responsabilidades generales de este rol..."
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="resize-none h-20"
+              className="resize-none h-24 rounded-xl border-slate-200 focus-visible:ring-emerald-500 text-sm"
             />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b pb-2">
-              <label className="text-sm font-semibold text-slate-700">
-                Permisos
+          {/* Sección de Permisos */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Configuración de Permisos
               </label>
-              <span className="text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200">
-                {totalSelected} seleccionados
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shadow-sm">
+                {totalSelected} PERMISOS SELECCIONADOS
               </span>
             </div>
 
-            {loadingPerms ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="animate-spin text-emerald-500" />
-              </div>
-            ) : (
-              Object.entries(groupedPermissions).map(([module, perms]) => (
-                <PermissionGroup
-                  key={module}
-                  moduleName={module}
-                  permissions={perms}
-                  selectedIds={selectedPermIds}
-                  onToggle={handleTogglePerm}
-                />
-              ))
-            )}
+            <div className="grid grid-cols-1 gap-1">
+              {loadingPerms ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-500 opacity-50" />
+                  <p className="text-xs text-slate-400 font-medium">Cargando catálogo de permisos...</p>
+                </div>
+              ) : (
+                Object.entries(groupedPermissions).map(([module, perms]) => (
+                  <PermissionGroup
+                    key={module}
+                    moduleName={module}
+                    permissions={perms}
+                    selectedIds={selectedPermIds}
+                    onToggle={handleTogglePerm}
+                  />
+                ))
+              )}
+            </div>
           </div>
 
           {errors.submit && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
+            <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-[11px] rounded-xl text-center">
               {errors.submit}
             </div>
           )}
         </div>
 
-        <DialogFooter className="p-6 bg-slate-50 border-t gap-3">
+        <div className="mx-7 h-px bg-slate-100 mb-6" />
+
+        {/* ── Footer ── */}
+        <DialogFooter className="px-7 pb-6 flex gap-3 sm:gap-3">
+          <Button
+            onClick={handleSubmit}
+            disabled={isSaving || saveSuccess || !nombre.trim()}
+            className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
+              saveSuccess
+                ? "bg-emerald-500 shadow-none text-white border-0"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)] border-0"
+            }`}
+          >
+            {saveSuccess ? (
+              <><CheckCircle2 className="mr-2 h-4 w-4" /> Rol Creado</>
+            ) : isSaving ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Registrando...</>
+            ) : (
+              "Crear Rol"
+            )}
+            )}
+          </Button>
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSaving || saveSuccess}
+            className="flex-1 h-[46px] rounded-xl border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors"
           >
             Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSaving || saveSuccess || !nombre.trim()}
-            className={`min-w-[140px] transition-all duration-300 ${
-              saveSuccess
-                ? "bg-emerald-500 text-white"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white"
-            }`}
-          >
-            {saveSuccess ? (
-              <>
-                <CheckCircle2 className="h-4 w-4 mr-2" /> Rol creado
-              </>
-            ) : isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Guardando...
-              </>
-            ) : (
-              "Crear Rol"
-            )}
           </Button>
         </DialogFooter>
       </DialogContent>

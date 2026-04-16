@@ -33,6 +33,7 @@ export default function GestionZona() {
   const [editFormData, setEditFormData] = useState({
     nombreZona: "",
     descripcion: "",
+    activo: 1,
   });
   const [selectedZone, setSelectedZone] = useState(null);
   const [deleteZone, setDeleteZone] = useState(null);
@@ -163,6 +164,7 @@ export default function GestionZona() {
     setEditFormData({
       nombreZona: zone.name || "",
       descripcion: zone.description || "",
+      activo: zone.statusId,
     });
     setIsEditOpen(true);
   };
@@ -176,7 +178,7 @@ export default function GestionZona() {
       const payload = {
         nombre_zona: editFormData.nombreZona.trim(),
         descripcion: editFormData.descripcion.trim(),
-        activo: editZone.statusId,
+        activo: editFormData.activo,
       };
 
       const response = await api.put(`/zonas/${editZone.id}`, payload);
@@ -210,14 +212,35 @@ export default function GestionZona() {
     setIsDetailsOpen(true);
   };
 
-  const handleToggleStatus = (zoneId) => {
-    setZones((prev) =>
-      prev.map((zone) =>
-        zone.id === zoneId
-          ? { ...zone, statusId: zone.statusId === 1 ? 0 : 1 }
-          : zone
-      )
-    );
+  const handleToggleStatus = async (zone) => {
+    const nextStatus = zone.statusId === 1 ? 0 : 1;
+    try {
+      setPageError(null);
+      const payload = {
+        nombre_zona: zone.name,
+        descripcion: zone.description,
+        activo: nextStatus,
+      };
+      await api.put(`/zonas/${zone.id}`, payload);
+      setZones((prev) =>
+        prev.map((z) =>
+          z.id === zone.id ? { ...z, statusId: nextStatus } : z
+        )
+      );
+      showSuccessToast(
+        nextStatus === 1 ? "Zona activada" : "Zona desactivada",
+        `La zona "${zone.name}" ha sido ${nextStatus === 1 ? "activada" : "desactivada"} correctamente.`
+      );
+    } catch (err) {
+      console.error("Error al cambiar estado:", err);
+      setPageError("No se pudo cambiar el estado de la zona.");
+    }
+  };
+
+  const showSuccessToast = (title, message) => {
+    setEditToast({ visible: true, zoneName: "" }); // Reset temp
+    // Using handleZoneUpdated style but customizable
+    setEditToast({ visible: true, zoneName: title }); // Generic usage
   };
 
   return (
@@ -280,7 +303,7 @@ export default function GestionZona() {
               onView={handleViewZone}
               onEdit={handleEditZone}
               onDelete={handleDeleteZone}
-              onToggleStatus={(zone) => handleToggleStatus(zone.id)}
+              onToggleStatus={handleToggleStatus}
             />
           )}
         </div>

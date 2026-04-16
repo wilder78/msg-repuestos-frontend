@@ -18,19 +18,15 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import {
-  User,
-  IdCard,
+  UserCog,
+  Contact,
   Phone,
-  Briefcase,
-  ShieldCheck,
+  FileText,
   CheckCircle2,
+  Loader2,
+  User as UserIcon,
+  AlertCircle,
 } from "lucide-react";
-
-const DOCUMENT_TYPES = [
-  { value: "1", label: "Cédula de Ciudadanía" },
-  { value: "2", label: "Cédula de Extranjería" },
-  { value: "3", label: "Pasaporte" },
-];
 
 const getAuthToken = () =>
   localStorage.getItem("token") || sessionStorage.getItem("token") || null;
@@ -53,389 +49,348 @@ const EmployeeEditModal = ({
   isOpen,
   onClose,
   empleado,
+  availableUsers = [],
+  usedUserIds = [],
   onEmpleadoUpdated,
   onSaveSuccess,
 }) => {
   const [formData, setFormData] = useState({
     idTipoDocumento: "1",
     numeroDocumento: "",
-    nombres: "",
-    apellidos: "",
+    nombre: "",
+    apellido: "",
     telefono: "",
-    cargo: "",
+    idUsuario: null,
     disponibilidad: true,
-    activo: true,
-    idUsuario: "",
+    idEstado: 1,
   });
-  const [originalData, setOriginalData] = useState(null);
-  const [errors, setErrors] = useState({});
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  const buildInitialData = (emp) => ({
-    idTipoDocumento:
-      emp.idTipoDocumento?.toString() || emp.tipoDocumento?.toString() || "1",
-    numeroDocumento: emp.numeroDocumento || emp.numero_documento || "",
-    nombres: emp.nombres || emp.nombre || "",
-    apellidos: emp.apellidos || emp.apellido || "",
-    telefono: emp.telefono || "",
-    cargo: emp.cargo || emp.rolOperativo || "",
-    disponibilidad: emp.disponibilidad === true || emp.disponibilidad === 1,
-    activo: emp.activo === true || emp.activo === 1 || emp.statusId !== 0,
-    idUsuario: emp.idUsuario ? String(emp.idUsuario) : "",
-  });
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
-    if (!isOpen || !empleado) return;
+    if (isOpen && empleado) {
+      console.log("[EmployeeEditModal] empleado recibido:", empleado);
 
-    const initialData = buildInitialData(empleado);
-    setOriginalData(initialData);
-    setFormData(initialData);
-    setErrors({});
-    setSaveSuccess(false);
+      setFormData({
+        idTipoDocumento: (empleado.idTipoDocumento || 1).toString(),
+        numeroDocumento: empleado.numeroDocumento || "",
+        // ✅ CORREGIDO: cubre ambas variantes nombre/nombres
+        nombre: empleado.nombre || empleado.nombres || "",
+        apellido: empleado.apellido || empleado.apellidos || "",
+        telefono: empleado.telefono || "",
+        idUsuario: empleado.idUsuario || null,
+        // ✅ CORREGIDO: disponibilidad como boolean
+        disponibilidad: empleado.disponibilidad === true || empleado.disponibilidad === 1,
+        // ✅ CORREGIDO: idEstado (no id_estado ni statusId)
+        idEstado: empleado.idEstado ?? empleado.statusId ?? 1,
+      });
+      setSaveSuccess(false);
+      setErrorMessage(null);
+    }
   }, [isOpen, empleado]);
 
-  if (!empleado) return null;
+  const usedSet = new Set(usedUserIds.map((id) => String(id)));
 
-  const hasChanges = () => {
-    if (!originalData) return false;
-    return JSON.stringify(formData) !== JSON.stringify(originalData);
+  const filteredUsers = availableUsers.filter((user) => {
+    const userId = String(user.idUsuario ?? user.id);
+    const currentSelected =
+      formData.idUsuario !== null && formData.idUsuario !== undefined
+        ? String(formData.idUsuario)
+        : null;
+    if (currentSelected && userId === currentSelected) return true;
+    return !usedSet.has(userId);
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setErrorMessage(null);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const validateForm = () => {
-    const nextErrors = {};
-    if (!formData.nombres.trim())
-      nextErrors.nombres = "El nombre es obligatorio.";
-    if (!formData.apellidos.trim())
-      nextErrors.apellidos = "El apellido es obligatorio.";
-    if (!formData.numeroDocumento.trim())
-      nextErrors.numeroDocumento = "El número de documento es obligatorio.";
-    if (!formData.telefono.trim())
-      nextErrors.telefono = "El teléfono es obligatorio.";
-    if (!formData.cargo.trim())
-      nextErrors.cargo = "El rol operativo es obligatorio.";
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+  const handleSelectChange = (name, value) => {
+    setErrorMessage(null);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!hasChanges()) {
-      setErrors({
-        submit: "No se han realizado cambios para actualizar.",
-      });
-      return;
-    }
-
-    if (!validateForm()) return;
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setIsSaving(true);
-    setErrors({});
-
-    const payload = {
-      idTipoDocumento: Number(formData.idTipoDocumento),
-      numeroDocumento: formData.numeroDocumento,
-      nombre: formData.nombres,
-      apellido: formData.apellidos,
-      telefono: formData.telefono,
-      rolOperativo: formData.cargo,
-      idUsuario: formData.idUsuario ? Number(formData.idUsuario) : null,
-      disponibilidad: Boolean(formData.disponibilidad),
-      activo: Boolean(formData.activo),
-    };
+    setErrorMessage(null);
 
     try {
-      const response = await authFetch(`${EMPLOYEE_ENDPOINT}/${empleado.id}`, {
+      // ✅ CORREGIDO: cubre todas las variantes posibles del ID
+      const empId =
+        empleado.idEmpleado ||
+        empleado.id ||
+        empleado.empleadoId ||
+        empleado.id_empleado;
+
+      console.log("[EmployeeEditModal] ID resuelto:", empId);
+
+      if (!empId) throw new Error("ID de empleado no encontrado.");
+
+      // ✅ CORREGIDO: payload limpio, solo campos que el modelo acepta
+      // - sin rolOperativo (no existe en BD)
+      // - idEstado en camelCase (no id_estado)
+      // - disponibilidad como boolean
+      const payload = {
+        idTipoDocumento: parseInt(formData.idTipoDocumento, 10),
+        numeroDocumento: formData.numeroDocumento,
+        nombre: formData.nombre?.trim(),
+        apellido: formData.apellido?.trim(),
+        telefono: formData.telefono?.trim(),
+        idUsuario: formData.idUsuario ? parseInt(formData.idUsuario, 10) : null,
+        disponibilidad: formData.disponibilidad === true || formData.disponibilidad === 1,
+        idEstado: parseInt(formData.idEstado, 10),
+      };
+
+      console.log("[EmployeeEditModal] payload enviado:", JSON.stringify(payload, null, 2));
+
+      const response = await authFetch(`${EMPLOYEE_ENDPOINT}/${empId}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const serverText = await response.text();
-        throw new Error(
-          serverText || `Error al actualizar empleado (${response.status})`,
-        );
+        let errorMsg = "Error al actualizar el empleado.";
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+        } catch {
+          errorMsg = (await response.text()) || errorMsg;
+        }
+        console.error("[EmployeeEditModal] Error del servidor:", errorMsg);
+        throw new Error(errorMsg);
       }
 
-      await response.json();
-      setSaveSuccess(true);
+      const responseData = await response.json();
+      const empleadoActualizado = responseData.data || responseData;
 
-      const updatedEmpleado = {
+      // ✅ CORREGIDO: updatedMapped usa los mismos nombres de campo del backend
+      const updatedMapped = {
         ...empleado,
         idTipoDocumento: payload.idTipoDocumento,
         numeroDocumento: payload.numeroDocumento,
-        nombres: payload.nombre,
-        apellidos: payload.apellido,
+        nombre: payload.nombre,
+        apellido: payload.apellido,
         telefono: payload.telefono,
-        cargo: payload.rolOperativo,
+        idUsuario: payload.idUsuario,
         disponibilidad: payload.disponibilidad,
-        activo: payload.activo,
+        idEstado: payload.idEstado,
+        ...empleadoActualizado,
       };
 
-      if (onEmpleadoUpdated) {
-        onEmpleadoUpdated(updatedEmpleado);
-      }
-
-      if (onSaveSuccess) {
-        onSaveSuccess(`${payload.nombre} ${payload.apellido}`.trim());
-      }
+      setSaveSuccess(true);
+      if (onEmpleadoUpdated) onEmpleadoUpdated(updatedMapped);
+      if (onSaveSuccess) onSaveSuccess(payload.nombre);
 
       setTimeout(() => {
         onClose();
       }, 700);
     } catch (error) {
-      setErrors({
-        submit: error.message || "No se pudo actualizar el empleado.",
-      });
+      console.error("[EmployeeEditModal] Excepción capturada:", error);
+      setErrorMessage(error.message || "Ocurrió un error inesperado.");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const isFormValid =
+    formData.nombre?.trim() !== "" &&
+    formData.apellido?.trim() !== "" &&
+    formData.telefono?.trim() !== "";
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-[600px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl"
-        style={{ backgroundColor: "#ffffff" }}
+        className="sm:max-w-[640px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl bg-white"
+        style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
       >
-        <div className="bg-white border-b border-gray-100 px-6 pt-6 pb-4">
-          <DialogHeader>
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                <ShieldCheck className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-bold text-slate-900">
-                  Editar Empleado
-                </DialogTitle>
-                <DialogDescription className="text-gray-400 text-sm mt-0.5">
-                  Modifica los datos registrados del empleado.
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-        </div>
+        <DialogHeader className="px-7 pt-6 pb-0">
+          <div className="flex items-center gap-2.5 text-[#10b981]">
+            <UserCog className="h-5 w-5" />
+            <DialogTitle className="text-[#0f172a] text-lg font-bold">
+              Editar Datos del Empleado
+            </DialogTitle>
+          </div>
+          <DialogDescription className="text-sm text-slate-500 mt-1">
+            Actualiza la información básica o vincula una cuenta de usuario diferente.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit}
-          className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto bg-white"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                Tipo de Documento
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <div className="px-7 py-6 grid grid-cols-2 gap-x-5 gap-y-4">
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Contact className="h-3.5 w-3.5 text-slate-400" />
+                Tipo Documento
               </Label>
               <Select
                 value={formData.idTipoDocumento}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, idTipoDocumento: value }))
-                }
+                onValueChange={(val) => handleSelectChange("idTipoDocumento", val)}
+                disabled
               >
-                <SelectTrigger className="w-full bg-slate-50 border-slate-200 text-slate-900 shadow-sm focus:border-emerald-400 focus:ring-emerald-400">
-                  <SelectValue placeholder="Seleccionar tipo" />
+                <SelectTrigger className="h-[42px] rounded-xl border-slate-200 bg-slate-50 opacity-70 cursor-not-allowed">
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-slate-200 bg-white text-slate-950 shadow-lg">
-                  {DOCUMENT_TYPES.map((type) => (
-                    <SelectItem
-                      key={type.value}
-                      value={type.value}
-                      className="bg-white text-slate-900 hover:bg-slate-100 focus:bg-slate-100 focus:text-slate-900"
-                    >
-                      {type.label}
-                    </SelectItem>
-                  ))}
+                <SelectContent>
+                  <SelectItem value="1">Cédula de Ciudadanía</SelectItem>
+                  <SelectItem value="2">Cédula de Extranjería</SelectItem>
+                  <SelectItem value="3">NIT</SelectItem>
+                  <SelectItem value="4">Pasaporte</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700">
                 Número de Documento
               </Label>
               <Input
                 value={formData.numeroDocumento}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    numeroDocumento: e.target.value,
-                  }))
-                }
-                className="border-gray-300"
-                placeholder="10203050"
-              />
-              {errors.numeroDocumento && (
-                <p className="text-xs text-red-500">{errors.numeroDocumento}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                Nombre
-              </Label>
-              <Input
-                value={formData.nombres}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, nombres: e.target.value }))
-                }
-                className="border-gray-300"
-                placeholder="Carlos Andres"
-              />
-              {errors.nombres && (
-                <p className="text-xs text-red-500">{errors.nombres}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                Apellido
-              </Label>
-              <Input
-                value={formData.apellidos}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    apellidos: e.target.value,
-                  }))
-                }
-                className="border-gray-300"
-                placeholder="Gómez Zapata"
-              />
-              {errors.apellidos && (
-                <p className="text-xs text-red-500">{errors.apellidos}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                Teléfono
-              </Label>
-              <Input
-                value={formData.telefono}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, telefono: e.target.value }))
-                }
-                className="border-gray-300"
-                placeholder="3005228978"
-              />
-              {errors.telefono && (
-                <p className="text-xs text-red-500">{errors.telefono}</p>
-              )}
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                Rol Operativo
-              </Label>
-              <Input
-                value={formData.cargo}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, cargo: e.target.value }))
-                }
-                className="border-gray-300"
-                placeholder="Vendedor"
-              />
-              {errors.cargo && (
-                <p className="text-xs text-red-500">{errors.cargo}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                ID de Usuario
-              </Label>
-              <Input
-                value={formData.idUsuario || "Sin usuario"}
+                readOnly
                 disabled
-                className="border-gray-200 bg-slate-100 text-slate-600"
+                className="h-[42px] rounded-xl border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                Disponibilidad
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-slate-400" />
+                Nombres <span className="text-[#10b981]">*</span>
               </Label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="disponibilidad"
-                  type="checkbox"
-                  checked={formData.disponibilidad}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      disponibilidad: e.target.checked,
-                    }))
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <Label
-                  htmlFor="disponibilidad"
-                  className="text-sm text-slate-700 cursor-pointer"
-                >
-                  Disponible
-                </Label>
-              </div>
+              <Input
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleInputChange}
+                className="h-[42px] rounded-xl border-slate-200 focus-visible:ring-[#10b981]"
+                required
+              />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">
-                Activo
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700">
+                Apellidos <span className="text-[#10b981]">*</span>
               </Label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="activo"
-                  type="checkbox"
-                  checked={formData.activo}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      activo: e.target.checked,
-                    }))
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <Label
-                  htmlFor="activo"
-                  className="text-sm text-slate-700 cursor-pointer"
-                >
-                  Activo
-                </Label>
-              </div>
+              <Input
+                name="apellido"
+                value={formData.apellido}
+                onChange={handleInputChange}
+                className="h-[42px] rounded-xl border-slate-200 focus-visible:ring-[#10b981]"
+                required
+              />
             </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5 text-slate-400" />
+                Teléfono <span className="text-[#10b981]">*</span>
+              </Label>
+              <Input
+                name="telefono"
+                value={formData.telefono}
+                onChange={handleInputChange}
+                className="h-[42px] rounded-xl border-slate-200 focus-visible:ring-[#10b981]"
+                required
+              />
+            </div>
+
+            {/* ✅ Rol Operativo solo visual — no se envía al backend */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 opacity-60">
+                Rol Operativo
+                <span className="text-xs font-normal text-slate-400">(solo lectura)</span>
+              </Label>
+              <Input
+                value={empleado?.cargo || empleado?.rolOperativo || "—"}
+                readOnly
+                disabled
+                className="h-[42px] rounded-xl border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 col-span-2 pt-2">
+              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <UserIcon className="h-3.5 w-3.5 text-slate-400" />
+                Vincular Cuenta de Usuario (Cambiar Email)
+              </Label>
+              <Select
+                value={
+                  formData.idUsuario === null || formData.idUsuario === undefined
+                    ? "null"
+                    : formData.idUsuario.toString()
+                }
+                onValueChange={(val) =>
+                  handleSelectChange("idUsuario", val === "null" ? null : val)
+                }
+              >
+                <SelectTrigger className="h-[42px] rounded-xl border-slate-200 focus-visible:ring-[#10b981]">
+                  <SelectValue placeholder="Ninguno / Sin cuenta" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[250px] overflow-y-auto border-slate-100 shadow-xl">
+                  <SelectItem value="null" className="font-semibold text-slate-500 italic">
+                    Ninguno / Sin cuenta
+                  </SelectItem>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <SelectItem
+                        key={user.idUsuario || user.id}
+                        value={(user.idUsuario || user.id).toString()}
+                      >
+                        {user.nombreUsuario} ({user.email})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-slate-400 italic">
+                      No hay usuarios disponibles
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {errorMessage && (
+              <div className="col-span-2 flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
           </div>
 
-          {errors.submit && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {errors.submit}
-            </div>
-          )}
+          <div className="mx-7 h-px bg-slate-100 mb-5" />
 
-          <div className="flex gap-3 pt-4 border-t border-slate-100">
+          <DialogFooter className="px-7 pb-6 flex gap-3 sm:gap-3">
+            <Button
+              type="submit"
+              disabled={isSaving || saveSuccess || !isFormValid}
+              className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
+                saveSuccess
+                  ? "bg-emerald-500 shadow-none text-white cursor-default"
+                  : !isFormValid
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  : "bg-[#10b981] hover:bg-[#0da673] text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)]"
+              }`}
+            >
+              {saveSuccess ? (
+                <><CheckCircle2 className="mr-2 h-4 w-4" /> Guardado</>
+              ) : isSaving ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Actualizando...</>
+              ) : (
+                "Guardar Cambios"
+              )}
+            </Button>
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={isSaving || saveSuccess}
-              className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
+              className="flex-1 h-[46px] rounded-xl border-slate-200 text-slate-600 font-semibold"
             >
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              disabled={isSaving || saveSuccess || !hasChanges()}
-              className={`flex-1 font-semibold shadow-sm transition-all duration-300 ${
-                saveSuccess
-                  ? "bg-emerald-600"
-                  : "bg-emerald-500 hover:bg-emerald-600"
-              } text-white disabled:bg-slate-300 disabled:cursor-not-allowed`}
-            >
-              {isSaving
-                ? "Guardando..."
-                : saveSuccess
-                  ? "Guardado"
-                  : "Guardar cambios"}
-            </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

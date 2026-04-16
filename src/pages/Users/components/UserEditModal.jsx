@@ -29,12 +29,13 @@ const UserEditModal = ({
   getInitials,
   onSaveSuccess,
 }) => {
+  const [error, setError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  
 
   if (!usuario) return null;
 
   const handleSave = async () => {
+    setError(null);
     const result = await onSubmit();
 
     if (result === true) {
@@ -52,6 +53,8 @@ const UserEditModal = ({
           }, 4500);
         }, 300);
       }, 800);
+    } else {
+      setError("No se pudieron guardar los cambios. Verifique su conexión o permisos.");
     }
   };
 

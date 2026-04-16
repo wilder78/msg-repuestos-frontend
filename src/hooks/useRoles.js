@@ -62,7 +62,11 @@ export const useRoles = () => {
         return {
           id: idActual,
           nombre: rol.nombreRol || rol.nombre_rol || rol.nombre,
-          descripcion: rol.descripcion || "Sin descripción",
+          descripcion:
+            rol.descripcionRol ||
+            rol.descripcion_rol ||
+            rol.descripcion ||
+            "Sin descripción",
           estado: rol.estado || "activo",
           idEstado: rol.idEstado || rol.id_estado || 1,
           fechaCreacion: ultimaFecha,

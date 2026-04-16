@@ -321,7 +321,7 @@ const GestionUsuarios = () => {
         }
         onSubmit={onCreateSubmit}
         loading={actionLoading}
-        onSaveSuccess={handleUserCreateSuccess} // ✅ NUEVA PROP
+        onSaveSuccess={handleUserCreateSuccess}
       />
 
       <UserEditModal
@@ -343,7 +343,7 @@ const GestionUsuarios = () => {
         loading={actionLoading}
         getInitials={getInitials}
         getAvatarColor={getAvatarColor}
-        onSaveSuccess={handleUserSaveSuccess} // ✅ NUEVA PROP
+        onSaveSuccess={handleUserSaveSuccess}
       />
 
       <UserDetailsModal

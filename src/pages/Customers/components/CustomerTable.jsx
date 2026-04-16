@@ -1,77 +1,129 @@
 import React from "react";
-import { Eye, Edit, Trash2, Mail, Phone, Calendar, Globe, UserCheck, Megaphone } from "lucide-react";
-import { Badge } from "../../../components/ui/badge";
+import { Mail, Phone, Calendar, UserCheck, Loader2 } from "lucide-react";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "../../../components/ui/table";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
-import { Button } from "../../../components/ui/button";
+import ActionButtons from "../../../components/shared/ActionButtons";
+import StatusBadge from "../../../components/shared/StatusBadge";
 
-export function CustomerTable({ customers }) {
-  // Datos de ejemplo para que veas el diseño si la lista está vacía
-  const displayData = customers.length > 0 ? customers : [
-    { id: 1, nombres: "Carlos Eduardo", apellidos: "Mendoza García", email: "carlos@email.com", telefono: "+51 987654321", estado: "activo", medioRegistro: "Visita de Vendedor" }
-  ];
+export function CustomerTable({ customers, loading, onView, onEdit, onDelete, onToggleStatus }) {
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 bg-white">
+        <Loader2 className="h-10 w-10 text-emerald-500 animate-spin" />
+        <p className="text-slate-500 font-medium animate-pulse">Cargando base de datos...</p>
+      </div>
+    );
+  }
+
+  if (!customers || customers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 bg-white text-center">
+        <div className="bg-slate-100 p-4 rounded-full mb-4">
+          <UserCheck className="h-8 w-8 text-slate-400" />
+        </div>
+        <h3 className="text-slate-800 font-bold text-lg">No hay clientes</h3>
+        <p className="text-slate-500 max-w-[250px]">
+          No se encontraron registros que coincidan con la búsqueda.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead className="bg-slate-50/50 border-b border-slate-100 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
-          <tr>
-            <th className="px-6 py-4">Foto</th>
-            <th className="px-6 py-4">Cliente</th>
-            <th className="px-6 py-4">Contacto</th>
-            <th className="px-6 py-4">Origen</th>
-            <th className="px-6 py-4">Estado</th>
-            <th className="px-6 py-4 text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-50">
-          {displayData.map((customer) => (
-            <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors group">
-              <td className="px-6 py-4">
-                <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                  <AvatarFallback className="bg-slate-100 text-slate-600 font-bold text-xs">
-                    {customer.nombres[0]}{customer.apellidos[0]}
+      <Table>
+        <TableHeader className="bg-slate-50/50">
+          <TableRow className="hover:bg-transparent border-none">
+            <TableHead className="w-[80px] px-6 py-4 text-slate-400 font-bold uppercase text-[11px] tracking-wider">Foto</TableHead>
+            <TableHead className="px-6 py-4 text-slate-400 font-bold uppercase text-[11px] tracking-wider">Cliente</TableHead>
+            <TableHead className="px-6 py-4 text-slate-400 font-bold uppercase text-[11px] tracking-wider">Contacto</TableHead>
+            <TableHead className="px-6 py-4 text-slate-400 font-bold uppercase text-[11px] tracking-wider">Tipo</TableHead>
+            <TableHead className="px-6 py-4 text-slate-400 font-bold uppercase text-[11px] tracking-wider">Estado</TableHead>
+            <TableHead className="px-6 py-4 text-right text-slate-400 font-bold uppercase text-[11px] tracking-wider pr-10">Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {customers.map((customer) => (
+            <TableRow
+              key={customer.idCliente}
+              className="hover:bg-slate-50/80 transition-all group border-b border-slate-100"
+            >
+              {/* AVATAR */}
+              <TableCell className="px-6 py-4">
+                <Avatar className="h-11 w-11 border-2 border-white shadow-sm ring-1 ring-slate-100">
+                  <AvatarFallback className="bg-slate-100 text-slate-500 font-bold text-xs">
+                    {customer.razonSocial?.[0] || "?"}
                   </AvatarFallback>
                 </Avatar>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex flex-col">
-                  <span className="font-bold text-slate-800 text-sm">{customer.nombres} {customer.apellidos}</span>
-                  <div className="flex items-center text-[11px] text-slate-400 mt-1">
-                    <Calendar size={12} className="mr-1" /> 14/1/2024
+              </TableCell>
+
+              {/* CLIENTE */}
+              <TableCell className="px-6 py-4">
+                <div className="flex flex-col gap-1">
+                  <span className="font-bold text-slate-800 text-[14px]">
+                    {customer.razonSocial || "Sin nombre"}
+                  </span>
+                  <div className="flex items-center gap-2 text-[12px] text-slate-400 font-medium">
+                    <Calendar size={12} />
+                    {customer.fechaRegistro
+                      ? new Date(customer.fechaRegistro).toLocaleDateString()
+                      : "Sin fecha"}
                   </div>
                 </div>
-              </td>
-              <td className="px-6 py-4 text-sm text-slate-500">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2"><Mail size={14} className="text-slate-300" /> {customer.email}</div>
-                  <div className="flex items-center gap-2"><Phone size={14} className="text-slate-300" /> {customer.telefono}</div>
+              </TableCell>
+
+              {/* CONTACTO */}
+              <TableCell className="px-6 py-4">
+                <div className="flex flex-col gap-1 text-[13px] text-slate-600 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Mail size={14} className="text-slate-300" />
+                    {customer.email || "Sin correo"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone size={14} className="text-slate-300" />
+                    {customer.telefono || "Sin teléfono"}
+                  </div>
                 </div>
-              </td>
-              <td className="px-6 py-4">
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                  <UserCheck size={14} className="text-blue-500" /> {customer.medioRegistro}
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <Badge className={
-                  customer.estado === "activo" 
-                  ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-50 px-3" 
-                  : "bg-slate-50 text-slate-400 border-slate-100"
-                }>
-                  {customer.estado === "activo" ? "● Activo" : "○ Inactivo"}
-                </Badge>
-              </td>
-              <td className="px-6 py-4 text-right">
-                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="text-blue-500 hover:bg-blue-50"><Eye size={18} /></Button>
-                  <Button variant="ghost" size="icon" className="text-emerald-500 hover:bg-emerald-50"><Edit size={18} /></Button>
-                  <Button variant="ghost" size="icon" className="text-red-400 hover:bg-red-50"><Trash2 size={18} /></Button>
-                </div>
-              </td>
-            </tr>
+              </TableCell>
+
+              {/* TIPO CLIENTE */}
+              <TableCell className="px-6 py-4">
+                <span className="text-xs font-medium text-slate-600 bg-slate-100/50 px-2 py-1 rounded-md">
+                  {customer.tipoCliente || "—"}
+                </span>
+              </TableCell>
+
+              {/* ESTADO */}
+              <TableCell className="px-6 py-4">
+                <StatusBadge
+                  statusId={customer.activo}
+                  onClick={() => onToggleStatus?.(customer)}
+                />
+              </TableCell>
+
+              {/* ACCIONES */}
+              <TableCell className="px-6 py-4 text-right pr-6">
+                <ActionButtons
+                  item={customer}
+                  onView={onView}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  disabledEdit={customer.activo !== 1}
+                  disabledDelete={customer.activo !== 1}
+                  labels={{
+                    view: "Ver cliente",
+                    edit: "Editar cliente",
+                    delete: "Eliminar cliente",
+                  }}
+                />
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

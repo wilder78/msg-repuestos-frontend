@@ -231,30 +231,32 @@ const GestionRoles = () => {
       const response = await fetch(
         `http://localhost:8080/api/roles/${deleteRole.id}`,
         {
-          method: "PUT",
+          method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ idEstado: 2 }),
         },
       );
       if (response.ok) {
+        // Actualización optimista: lo quitamos de la lista local
         setRoles((prev) =>
-          prev.map((r) =>
-            r.id === deleteRole.id
-              ? { ...r, idEstado: 2, estado: "inactivo" }
-              : r,
-          ),
+          prev.filter((r) => String(r.id) !== String(deleteRole.id)),
         );
+        // Sincronización real: refrescamos desde el servidor
+        await refresh();
+
         setIsDeleteOpen(false);
         showSuccessToast(
-          "Rol inactivado",
-          `El rol "${deleteRole.nombre}" se inactivó correctamente.`,
+          "Rol eliminado",
+          `El rol "${deleteRole.nombre}" ha sido eliminado permanentemente.`,
         );
+      } else {
+        const errorData = await response.json();
+        console.error("Error al eliminar rol:", errorData.message);
       }
     } catch (error) {
-      console.error("Error al desactivar rol:", error);
+      console.error("Error en la petición de eliminación:", error);
     } finally {
       setIsLoadingDelete(false);
     }
