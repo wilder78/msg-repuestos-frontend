@@ -51,7 +51,7 @@ const RoleDetailsModal = ({ isOpen, onClose, rol, permisos = [] }) => {
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto bg-white">
+        <div className="p-6 space-y-6 bg-white">
           {/* Perfil del Rol */}
           <div className="bg-gradient-to-br from-slate-50 to-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-start gap-4">

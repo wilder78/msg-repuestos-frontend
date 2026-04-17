@@ -17,7 +17,7 @@ const AllowDetailsModal = ({ isOpen, onClose, permiso }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-[550px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl"
+        className="sm:max-w-[650px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl"
         style={{
           backgroundColor: "white",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -43,7 +43,7 @@ const AllowDetailsModal = ({ isOpen, onClose, permiso }) => {
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto bg-white">
+        <div className="p-6 space-y-6 bg-white">
           {/* Perfil del Permiso */}
           <div className="bg-gradient-to-br from-slate-50 to-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-start gap-4">

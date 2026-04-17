@@ -5,13 +5,12 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-  DialogDescription,
 } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
 import { Label } from "../../../components/ui/label";
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2, CheckCircle2 } from "lucide-react";
 
 const AreaCreateModal = ({ isOpen, onClose, onCreateArea, onSaveSuccess, isSaving }) => {
   const [form, setForm] = useState({
@@ -76,65 +75,86 @@ const handleSubmit = async (event) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
-        <div className="relative bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-b border-emerald-100">
-          <DialogHeader className="relative p-6 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                <MapPin className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-bold text-slate-800">
-                  Crear nueva zona
-                </DialogTitle>
-                <DialogDescription className="text-sm text-slate-500">
-                  Completa los datos para registrar una nueva área en el sistema.
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-        </div>
+      <DialogContent
+        className="sm:max-w-[640px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl"
+        style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
+      >
+        {/* ── Header ── */}
+        <DialogHeader className="px-7 pt-6 pb-0">
+          <div className="flex items-center gap-2.5 text-[#10b981]">
+            <MapPin className="h-5 w-5" />
+            <DialogTitle className="text-[#0f172a] text-lg font-bold">
+              Crear Nueva Zona
+            </DialogTitle>
+          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            Completa los datos para registrar una nueva área en el sistema.
+          </p>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 px-7 py-5 bg-white">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">Nombre de zona</Label>
+        <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5 bg-white">
+          <div className="grid grid-cols-1 gap-5">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700">
+                Nombre de zona <span className="text-[#10b981]">*</span>
+              </Label>
               <Input
                 value={form.nombreZona}
                 onChange={(event) => handleChange("nombreZona", event.target.value)}
-                placeholder="Zona sur Colombia"
-                className="h-[44px] rounded-xl border-slate-200 focus-visible:ring-emerald-500"
+                placeholder="Ej: Zona Sur Colombia"
+                className="h-[42px] rounded-xl border-slate-200 focus-visible:ring-[#10b981]"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">Descripción</Label>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700">
+                Descripción <span className="text-[#10b981]">*</span>
+              </Label>
               <Textarea
                 value={form.descripcion}
                 onChange={(event) => handleChange("descripcion", event.target.value)}
                 placeholder="Empresas y bodegas ubicadas en el sector sur"
-                className="min-h-[120px] rounded-xl border-slate-200 focus-visible:ring-emerald-500"
+                className="min-h-[100px] rounded-xl border-slate-200 focus-visible:ring-[#10b981] resize-none"
               />
             </div>
           </div>
 
-          {error && <p className="text-sm text-rose-600">{error}</p>}
+          {error && <p className="text-xs text-rose-500 mt-1">{error}</p>}
 
-          <DialogFooter className="pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSaving}
-              className="bg-slate-100 text-slate-700 hover:bg-slate-200"
-            >
-              Cancelar
-            </Button>
+          <div className="h-px bg-slate-100 my-5" />
+
+          {/* ── Footer ── */}
+          <DialogFooter className="flex gap-3 sm:gap-3">
             <Button
               type="submit"
-              disabled={isSaving || saveSuccess}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={isSaving || saveSuccess || !form.nombreZona.trim() || !form.descripcion.trim()}
+              className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
+                saveSuccess
+                  ? "bg-emerald-500 shadow-none"
+                  : (isSaving || !form.nombreZona.trim() || !form.descripcion.trim())
+                    ? "bg-slate-300 cursor-not-allowed text-slate-500 shadow-none hover:bg-slate-300"
+                    : "bg-[#10b981] hover:bg-[#0da673] shadow-[0_4px_14px_rgba(16,185,129,0.3)] text-white"
+              }`}
             >
-              {saveSuccess ? "Guardado" : isSaving ? "Guardando..." : "Guardar área"}
+              {saveSuccess ? (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" /> Creado
+                </>
+              ) : isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...
+                </>
+              ) : (
+                "Guardar Área"
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSaving || saveSuccess}
+              className="flex-1 h-[46px] rounded-xl border-slate-200 text-slate-600 font-semibold"
+            >
+              Cancelar
             </Button>
           </DialogFooter>
         </form>

@@ -257,11 +257,22 @@ const UserCreateModal = ({
         <DialogFooter className="px-7 pb-6 flex gap-3 sm:gap-3">
           <Button
             onClick={handleSubmit}
-            disabled={loading || !!passwordError || saveSuccess}
+            disabled={
+              loading ||
+              !!passwordError ||
+              saveSuccess ||
+              !formData.nombreUsuario?.trim() ||
+              !formData.email?.trim() ||
+              !formData.id_rol ||
+              !formData.password?.trim() ||
+              !confirmPassword?.trim()
+            }
             className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
               saveSuccess
-                ? "bg-emerald-500 shadow-none"
-                : "bg-[#10b981] hover:bg-[#0da673] shadow-[0_4px_14px_rgba(16,185,129,0.3)]"
+                ? "bg-emerald-500 shadow-none text-white"
+                : (loading || !!passwordError || !formData.nombreUsuario?.trim() || !formData.email?.trim() || !formData.id_rol || !formData.password?.trim() || !confirmPassword?.trim())
+                  ? "bg-slate-300 cursor-not-allowed text-slate-500 shadow-none hover:bg-slate-300"
+                  : "bg-[#10b981] hover:bg-[#0da673] shadow-[0_4px_14px_rgba(16,185,129,0.3)] text-white"
             }`}
           >
             {saveSuccess ? (

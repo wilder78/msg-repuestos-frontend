@@ -58,14 +58,20 @@ const UserEditModal = ({
     }
   };
 
-  // ✅ NUEVO: Lógica para detectar si hay cambios reales
+  // ✅ NUEVO: Lógica para detectar si hay cambios reales con protección contra nulos
   const hasChanges = () => {
     if (!usuario || !formData) return false;
+    
+    const nombreActual = (formData.nombreUsuario || "").trim();
+    const emailActual = (formData.email || "").trim();
+    const rolActual = formData.id_rol?.toString() || "";
+    const estadoActual = formData.idEstado?.toString() || "1";
+
     return (
-      formData.nombreUsuario.trim() !== (usuario.nombreUsuario || "") ||
-      formData.email.trim() !== (usuario.email || "") ||
-      formData.id_rol?.toString() !== (usuario.id_rol?.toString() || "") ||
-      formData.idEstado?.toString() !== (usuario.idEstado?.toString() || "1")
+      nombreActual !== (usuario.nombreUsuario || "").trim() ||
+      emailActual !== (usuario.email || "").trim() ||
+      rolActual !== (usuario.id_rol?.toString() || "") ||
+      estadoActual !== (usuario.idEstado?.toString() || "1")
     );
   };
 
