@@ -260,16 +260,19 @@ const EmployeeCreateModal = ({
                     Ninguno / Sin cuenta
                   </SelectItem>
 
-                  {/* Solo usuarios que NO están asignados a otro empleado o cliente */}
                   {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <SelectItem
-                        key={user.idUsuario || user.id}
-                        value={(user.idUsuario || user.id).toString()}
-                      >
-                        {user.nombreUsuario} ({user.email})
-                      </SelectItem>
-                    ))
+                    filteredUsers.map((user) => {
+                      const roleId = Number(user.idRol ?? user.id_rol ?? user.rol?.idRol ?? user.rol?.id_rol ?? 0);
+                      const isClient = roleId === 4;
+                      return (
+                        <SelectItem
+                          key={user.idUsuario || user.id}
+                          value={(user.idUsuario || user.id).toString()}
+                        >
+                          {user.nombreUsuario} {!isClient && `(${user.email})`} - {user.nombreRol || "Sin rol"}
+                        </SelectItem>
+                      );
+                    })
                   ) : (
                     <div className="px-3 py-2 text-sm text-slate-400 italic">
                       No hay usuarios disponibles

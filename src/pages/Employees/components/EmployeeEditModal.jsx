@@ -26,6 +26,7 @@ import {
   Loader2,
   User as UserIcon,
   AlertCircle,
+  Edit2, // ✅ NUEVA IMPORTACIÓN
 } from "lucide-react";
 
 const getAuthToken = () =>
@@ -49,6 +50,7 @@ const EmployeeEditModal = ({
   isOpen,
   onClose,
   empleado,
+  roles = [],
   availableUsers = [],
   usedUserIds = [],
   onEmpleadoUpdated,
@@ -60,10 +62,13 @@ const EmployeeEditModal = ({
     nombre: "",
     apellido: "",
     telefono: "",
+    rolOperativo: "",
     idUsuario: null,
     disponibilidad: true,
     idEstado: 1,
   });
+
+  const [initialData, setInitialData] = useState(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -71,37 +76,38 @@ const EmployeeEditModal = ({
 
   useEffect(() => {
     if (isOpen && empleado) {
-      console.log("[EmployeeEditModal] empleado recibido:", empleado);
-
-      setFormData({
+      const initialValues = {
         idTipoDocumento: (empleado.idTipoDocumento || 1).toString(),
         numeroDocumento: empleado.numeroDocumento || "",
-        // ✅ CORREGIDO: cubre ambas variantes nombre/nombres
         nombre: empleado.nombre || empleado.nombres || "",
         apellido: empleado.apellido || empleado.apellidos || "",
         telefono: empleado.telefono || "",
+        rolOperativo: empleado.cargo || empleado.rolOperativo || "",
         idUsuario: empleado.idUsuario || null,
-        // ✅ CORREGIDO: disponibilidad como boolean
         disponibilidad: empleado.disponibilidad === true || empleado.disponibilidad === 1,
-        // ✅ CORREGIDO: idEstado (no id_estado ni statusId)
         idEstado: empleado.idEstado ?? empleado.statusId ?? 1,
-      });
+      };
+      setFormData(initialValues);
+      setInitialData(initialValues);
       setSaveSuccess(false);
       setErrorMessage(null);
     }
   }, [isOpen, empleado]);
 
-  const usedSet = new Set(usedUserIds.map((id) => String(id)));
+  // ── Filtrado de usuarios disponibles ──────────────────────────────────────
+  const usedSet = new Set((usedUserIds || []).map(String));
 
   const filteredUsers = availableUsers.filter((user) => {
     const userId = String(user.idUsuario ?? user.id);
-    const currentSelected =
-      formData.idUsuario !== null && formData.idUsuario !== undefined
-        ? String(formData.idUsuario)
-        : null;
+    const currentSelected = formData.idUsuario !== null && formData.idUsuario !== undefined
+      ? String(formData.idUsuario)
+      : null;
+
+    // Mantener el usuario actual o incluir si no está usado
     if (currentSelected && userId === currentSelected) return true;
     return !usedSet.has(userId);
   });
+  // ──────────────────────────────────────────────────────────────────────────
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -111,7 +117,13 @@ const EmployeeEditModal = ({
 
   const handleSelectChange = (name, value) => {
     setErrorMessage(null);
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const newState = { ...prev, [name]: value };
+      if (name === "idUsuario" && value === null) {
+        newState.rolOperativo = "";
+      }
+      return newState;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -120,33 +132,20 @@ const EmployeeEditModal = ({
     setErrorMessage(null);
 
     try {
-      // ✅ CORREGIDO: cubre todas las variantes posibles del ID
-      const empId =
-        empleado.idEmpleado ||
-        empleado.id ||
-        empleado.empleadoId ||
-        empleado.id_empleado;
-
-      console.log("[EmployeeEditModal] ID resuelto:", empId);
-
+      const empId = empleado.idEmpleado || empleado.id || empleado.id_empleado;
       if (!empId) throw new Error("ID de empleado no encontrado.");
 
-      // ✅ CORREGIDO: payload limpio, solo campos que el modelo acepta
-      // - sin rolOperativo (no existe en BD)
-      // - idEstado en camelCase (no id_estado)
-      // - disponibilidad como boolean
       const payload = {
         idTipoDocumento: parseInt(formData.idTipoDocumento, 10),
         numeroDocumento: formData.numeroDocumento,
         nombre: formData.nombre?.trim(),
         apellido: formData.apellido?.trim(),
         telefono: formData.telefono?.trim(),
+        rolOperativo: formData.rolOperativo,
         idUsuario: formData.idUsuario ? parseInt(formData.idUsuario, 10) : null,
-        disponibilidad: formData.disponibilidad === true || formData.disponibilidad === 1,
+        disponibilidad: formData.disponibilidad,
         idEstado: parseInt(formData.idEstado, 10),
       };
-
-      console.log("[EmployeeEditModal] payload enviado:", JSON.stringify(payload, null, 2));
 
       const response = await authFetch(`${EMPLOYEE_ENDPOINT}/${empId}`, {
         method: "PUT",
@@ -161,14 +160,12 @@ const EmployeeEditModal = ({
         } catch {
           errorMsg = (await response.text()) || errorMsg;
         }
-        console.error("[EmployeeEditModal] Error del servidor:", errorMsg);
         throw new Error(errorMsg);
       }
 
       const responseData = await response.json();
       const empleadoActualizado = responseData.data || responseData;
 
-      // ✅ CORREGIDO: updatedMapped usa los mismos nombres de campo del backend
       const updatedMapped = {
         ...empleado,
         idTipoDocumento: payload.idTipoDocumento,
@@ -176,6 +173,7 @@ const EmployeeEditModal = ({
         nombre: payload.nombre,
         apellido: payload.apellido,
         telefono: payload.telefono,
+        cargo: payload.rolOperativo,
         idUsuario: payload.idUsuario,
         disponibilidad: payload.disponibilidad,
         idEstado: payload.idEstado,
@@ -190,17 +188,32 @@ const EmployeeEditModal = ({
         onClose();
       }, 700);
     } catch (error) {
-      console.error("[EmployeeEditModal] Excepción capturada:", error);
       setErrorMessage(error.message || "Ocurrió un error inesperado.");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const hasChanges = () => {
+    if (!initialData) return false;
+    return Object.keys(formData).some(key => {
+      // Comparación normalizada para idUsuario (evitar discrepancias null vs undefined vs empty string)
+      if (key === 'idUsuario') {
+        const currentId = formData.idUsuario ? String(formData.idUsuario) : null;
+        const initialId = initialData.idUsuario ? String(initialData.idUsuario) : null;
+        return currentId !== initialId;
+      }
+      return formData[key] !== initialData[key];
+    });
+  };
+
   const isFormValid =
     formData.nombre?.trim() !== "" &&
     formData.apellido?.trim() !== "" &&
-    formData.telefono?.trim() !== "";
+    formData.telefono?.trim() !== "" &&
+    (formData.idUsuario === null ? true : formData.rolOperativo?.trim() !== "");
+
+  const canSave = isFormValid && hasChanges();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -208,21 +221,27 @@ const EmployeeEditModal = ({
         className="sm:max-w-[640px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl bg-white"
         style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
       >
-        <DialogHeader className="px-7 pt-6 pb-0">
-          <div className="flex items-center gap-2.5 text-[#10b981]">
-            <UserCog className="h-5 w-5" />
-            <DialogTitle className="text-[#0f172a] text-lg font-bold">
-              Editar Datos del Empleado
-            </DialogTitle>
-          </div>
-          <DialogDescription className="text-sm text-slate-500 mt-1">
-            Actualiza la información básica o vincula una cuenta de usuario diferente.
-          </DialogDescription>
-        </DialogHeader>
+        {/* ── Header Estilo Premium ── */}
+        <div className="bg-white border-b border-gray-100 px-7 pt-6 pb-4">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500 rounded-xl">
+                <Edit2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-gray-900">
+                  Editar Datos del Empleado
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 text-sm mt-0.5">
+                  Actualiza la información básica o vincula una cuenta de usuario diferente
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col">
           <div className="px-7 py-6 grid grid-cols-2 gap-x-5 gap-y-4">
-
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Contact className="h-3.5 w-3.5 text-slate-400" />
@@ -298,24 +317,11 @@ const EmployeeEditModal = ({
               />
             </div>
 
-            {/* ✅ Rol Operativo solo visual — no se envía al backend */}
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 opacity-60">
-                Rol Operativo
-                <span className="text-xs font-normal text-slate-400">(solo lectura)</span>
-              </Label>
-              <Input
-                value={empleado?.cargo || empleado?.rolOperativo || "—"}
-                readOnly
-                disabled
-                className="h-[42px] rounded-xl border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5 col-span-2 pt-2">
+            {/* SECCIÓN USUARIO - REQUERIDA PARA ROL */}
+            <div className="flex flex-col gap-1.5 col-span-2 pt-2 border-t border-slate-100 mt-2">
               <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <UserIcon className="h-3.5 w-3.5 text-slate-400" />
-                Vincular Cuenta de Usuario (Cambiar Email)
+                <UserIcon className="h-3.5 w-3.5 text-[#10b981]" />
+                Vincular Cuenta de Usuario
               </Label>
               <Select
                 value={
@@ -335,19 +341,46 @@ const EmployeeEditModal = ({
                     Ninguno / Sin cuenta
                   </SelectItem>
                   {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <SelectItem
-                        key={user.idUsuario || user.id}
-                        value={(user.idUsuario || user.id).toString()}
-                      >
-                        {user.nombreUsuario} ({user.email})
-                      </SelectItem>
-                    ))
+                    filteredUsers.map((user) => {
+                      const roleId = Number(user.idRol ?? user.id_rol ?? user.rol?.idRol ?? user.rol?.id_rol ?? 0);
+                      const isClient = roleId === 4;
+                      return (
+                        <SelectItem
+                          key={user.idUsuario || user.id}
+                          value={(user.idUsuario || user.id).toString()}
+                        >
+                          {user.nombreUsuario} {!isClient && `(${user.email})`} - {user.nombreRol || "Sin rol"}
+                        </SelectItem>
+                      );
+                    })
                   ) : (
                     <div className="px-3 py-2 text-sm text-slate-400 italic">
-                      No hay usuarios disponibles
+                      No hay usuarios internos disponibles
                     </div>
                   )}
+                </SelectContent>
+              </Select>
+            </div>
+
+              {/* ROL OPERATIVO - CONDICIONAL */}
+            <div className="flex flex-col gap-1.5 col-span-2">
+              <Label className={`text-xs font-semibold flex items-center gap-1.5 ${!formData.idUsuario ? "text-slate-400" : "text-slate-700"}`}>
+                Rol Operativo {formData.idUsuario && <span className="text-[#10b981]">*</span>}
+              </Label>
+              <Select
+                value={formData.rolOperativo}
+                onValueChange={(val) => handleSelectChange("rolOperativo", val)}
+                disabled={!formData.idUsuario}
+              >
+                <SelectTrigger className={`h-[42px] rounded-xl border-slate-200 ${!formData.idUsuario ? "bg-slate-50 opacity-60 cursor-not-allowed" : "focus-visible:ring-[#10b981]"}`}>
+                  <SelectValue placeholder={!formData.idUsuario ? "Vincule un usuario primero" : "Seleccionar cargo"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((rol) => (
+                    <SelectItem key={rol.idRol} value={rol.nombreRol}>
+                      {rol.nombreRol}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -365,11 +398,11 @@ const EmployeeEditModal = ({
           <DialogFooter className="px-7 pb-6 flex gap-3 sm:gap-3">
             <Button
               type="submit"
-              disabled={isSaving || saveSuccess || !isFormValid}
+              disabled={isSaving || saveSuccess || !canSave}
               className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
                 saveSuccess
-                  ? "bg-emerald-500 shadow-none text-white cursor-default"
-                  : !isFormValid
+                  ? "bg-emerald-500 shadow-none text-white"
+                  : !canSave
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                   : "bg-[#10b981] hover:bg-[#0da673] text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)]"
               }`}

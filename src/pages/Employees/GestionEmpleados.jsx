@@ -51,8 +51,8 @@ const mapEmployee = (empleado, userEmailMap = {}) => {
     email: userEmail || empleado.usuario?.email || "",
     telefono: empleado.telefono || "",
     numeroDocumento: empleado.numeroDocumento || "",
-    estado: empleado.activo === false ? "inactivo" : "activo",
-    statusId: empleado.activo === false ? 0 : 1,
+    estado: (empleado.idEstado === 1 || empleado.activo !== false) ? "activo" : "inactivo",
+    statusId: empleado.idEstado ?? (empleado.activo === false ? 2 : 1),
     idUsuario,
     idRol: empleado.usuario?.idRol || empleado.usuario?.id_rol || null,
     disponibilidad: empleado.disponibilidad ?? false,
@@ -158,8 +158,7 @@ const GestionEmpleados = () => {
 
         const listRoles = (rolePayload.data || rolePayload.roles || rolePayload || [])
           .filter((r) => 
-            r.nombreRol?.toLowerCase() !== "cliente" && 
-            r.idRol !== 4 && r.idRol !== 1
+            r.idRol !== 1 // Solo excluimos SuperAdmin de cargos operativos
           );
 
         setAllUsers(usuarios);
@@ -185,37 +184,28 @@ const GestionEmpleados = () => {
         .filter((id) => id !== null && id !== undefined)
     );
 
-    // 2. Filtrar allUsers ocultando los que ya están asignados Y los que son "Clientes" o "Proveedores"
     return allUsers.filter((u) => {
-      const userId = (u.idUsuario || u.id)?.toString();
       const userEmail = (u.email || u.correo || "").toLowerCase().trim();
       const roleName = (u.rol?.nombreRol || u.nombreRol || u.cargo || "").toLowerCase();
       
-      // Condición 1: No debe estar asignado a otro empleado
-      const isNotAssigned = userId && !assignedUserIds.has(userId);
-
       // Condición 2: El correo NO debe pertenecer a la base de datos de clientes
       const isNotACustomerEmail = !customerEmails.has(userEmail);
       
-      // Condición 3: No debe tener un rol asociado a entidades externas
+      // Condición 3: No debe tener un rol asociado a entidades externas restringidas (excepto Clientes que ahora se permiten con privacidad)
       const hasRestrictedRole = 
-        u.idRol === 4 || u.id_rol === 4 || u.idRol === 1 || u.id_rol === 1 ||
-        u.rol?.idRol === 4 || u.rol?.idRol === 1 ||
-        roleName.includes("cliente") || 
+        u.idRol === 1 || u.id_rol === 1 ||
+        u.rol?.idRol === 1 ||
         roleName.includes("proveedor") ||
-        roleName.includes("moto") || // Bloqueo preventivo orientado a tus clientes (Talleres)
         roleName.includes("externo");
       
-      // Condición 4: No debe tener vínculos directos a otras tablas
+      // Condición 4: No debe tener vínculos directos a otras tablas críticas (excepto clientes)
       const hasExternalLink = 
-        (u.idCliente && u.idCliente !== 0) || 
-        (u.id_cliente && u.id_cliente !== 0) ||
-        (u.idProveedor && u.idProveedor !== 0) ||
+        (u.idProveedor && u.idProveedor !== 0) || 
         (u.id_proveedor && u.id_proveedor !== 0);
 
-      return isNotAssigned && isNotACustomerEmail && !hasRestrictedRole && !hasExternalLink;
+      return !hasRestrictedRole && !hasExternalLink;
     });
-  }, [empleados, allUsers, customerEmails]);
+  }, [allUsers, customerEmails]);
 
   const filteredEmpleados = useMemo(() => {
     return empleados.filter((empleado) => {
@@ -245,26 +235,28 @@ const GestionEmpleados = () => {
   };
 
   const handleToggleStatus = async (empleado) => {
+    const nextStatus = empleado.statusId === 1 ? 2 : 1;
     try {
-      const newStatus = empleado.statusId === 1 ? 0 : 1;
       const response = await authFetch(`${EMPLOYEE_ENDPOINT}/${empleado.id}`, {
         method: "PUT",
-        body: JSON.stringify({ activo: newStatus === 1 }),
+        body: JSON.stringify({ idEstado: nextStatus }),
       });
       if (!response.ok) throw new Error("Error al cambiar el estado");
+      
       setEmpleados((prev) =>
         prev.map((emp) =>
           emp.id === empleado.id
-            ? { ...emp, statusId: newStatus, estado: newStatus === 1 ? "activo" : "inactivo" }
+            ? { ...emp, statusId: nextStatus, estado: nextStatus === 1 ? "activo" : "inactivo" }
             : emp
         )
       );
+      
       showSuccessToast(
-        newStatus === 1 ? "Empleado Activado" : "Empleado Inactivado",
-        `El empleado "${empleado.nombres}" se actualizó correctamente.`
+        nextStatus === 1 ? "Empleado Activado" : "Empleado Inactivado",
+        `El empleado "${empleado.nombres}" se ${nextStatus === 1 ? "activó" : "inactivó"} correctamente.`
       );
     } catch (error) {
-      console.error(error);
+      console.error("Error al cambiar estado:", error);
     }
   };
 

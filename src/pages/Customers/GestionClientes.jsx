@@ -12,9 +12,11 @@ import {
 import SuccessToast from "../../components/ui/SuccessToast";
 import PageHeader from "../../components/shared/PageHeader";
 import { CustomerTable } from "./components/CustomerTable";
-import { CustomerForm } from "./components/CustomerForm";
-// ✅ Importamos el nuevo componente
+import { CustomerForm } from "./components/CustomerCreateModal";
 import CustomerDetailsModal from "./components/CustomerDetailsModal";
+import CustomerEditModal from "./components/CustomerEditModal";
+import CustomerDeleteModal from "./components/CustomerDeleteModal";
+import CustomerConflictModal from "./components/CustomerConflictModal";
 
 const PAGE_SIZE = 8;
 
@@ -35,6 +37,19 @@ export default function GestionClientes() {
     title: "",
     message: "",
   });
+
+  // ✅ Estados para el modal de edición
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEditCustomer, setSelectedEditCustomer] = useState(null);
+
+  // ✅ Estados para el modal de eliminación
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedDeleteCustomer, setSelectedDeleteCustomer] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // ✅ Estados para modal de conflicto (historial de compras)
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
+  const [conflictCustomer, setConflictCustomer] = useState(null);
 
   const showSuccessToast = (title, message) => {
     setToastConfig({ visible: true, title, message });
@@ -78,7 +93,15 @@ export default function GestionClientes() {
       let list = Array.isArray(data)
         ? data
         : (data?.data ?? data?.content ?? []);
-      setCustomers(list);
+
+      // Normalización de estados (1: Activo, 2: Inactivo) y IDs
+      const mappedList = list.map(c => ({
+        ...c,
+        idCliente: c.idCliente || c.id,
+        activo: (c.activo === true || c.activo === 1 || c.idEstado === 1) ? 1 : 2
+      }));
+      
+      setCustomers(mappedList);
     } catch (err) {
       setError(
         err.name === "TypeError"
@@ -129,6 +152,123 @@ export default function GestionClientes() {
       "Operación exitosa",
       `El cliente "${customerName}" ha sido procesado correctamente.`,
     );
+  };
+
+  // ✅ HANDLERS PARA EDICIÓN
+  const handleEditClick = (customer) => {
+    setSelectedEditCustomer(customer);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCustomerUpdated = (updatedData) => {
+    setCustomers((prev) =>
+      prev.map((c) =>
+        (c.idCliente === updatedData.idCliente) ? { ...c, ...updatedData } : c
+      )
+    );
+    showSuccessToast(
+      "Cambios guardados",
+      `Los datos de "${updatedData.razonSocial}" se actualizaron con éxito.`
+    );
+    fetchCustomers(); // Refrescamos para asegurar sincronía con el backend
+  };
+
+  // ✅ HANDLERS PARA ELIMINACIÓN
+  const handleDeleteClick = (customer) => {
+    setSelectedDeleteCustomer(customer);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDeleteCustomer) return;
+
+    try {
+      setIsDeleting(true);
+      const clientId = selectedDeleteCustomer.idCliente || selectedDeleteCustomer.id;
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+      const response = await fetch(`http://localhost:8080/api/customers/${clientId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // 1. Manejo de respuesta JSON segura
+      const data = await response.json().catch(() => ({}));
+
+      // 2. Manejo específico para Conflicto (Historial) - SIN ERROR EN CONSOLA
+      if (response.status === 409) {
+        setConflictCustomer(selectedDeleteCustomer);
+        setIsConflictModalOpen(true);
+        setIsDeleteModalOpen(false);
+        return; // Salimos de la función elegantemente
+      }
+
+      // 3. Manejo de otros errores (400, 404, 500)
+      if (!response.ok) {
+        throw new Error(data.message || "Error al procesar la solicitud");
+      }
+
+      // 4. ÉXITO
+      showSuccessToast(
+        "Registro eliminado",
+        `El cliente "${selectedDeleteCustomer.razonSocial}" ha sido removido del sistema.`
+      );
+      
+      setIsDeleteModalOpen(false);
+      setSelectedDeleteCustomer(null);
+      fetchCustomers();
+
+    } catch (error) {
+      // Solo se registrarán en consola errores reales (red, 500, crash de código)
+      console.error("Critical Delete Error:", error.message);
+      
+      // Opcional: Mostrar un toast de error genérico para el usuario
+      // showErrorToast("Error", error.message);
+
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleToggleStatus = async (customer) => {
+    const nextStatus = customer.activo === 1 ? 2 : 1;
+    const clientId = customer.idCliente || customer.id;
+
+    if (!clientId) return;
+
+    try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      const response = await fetch(`http://localhost:8080/api/customers/${clientId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          idEstado: nextStatus, // Estandarizado con otros módulos
+          activo: nextStatus === 1 // Booleano para el backend de clientes
+        }),
+      });
+
+      if (!response.ok) throw new Error("Error al cambiar estado");
+
+      setCustomers((prev) =>
+        prev.map((c) =>
+          (c.idCliente || c.id) === clientId 
+            ? { ...c, activo: nextStatus } 
+            : c
+        )
+      );
+
+      showSuccessToast(
+        nextStatus === 1 ? "Cliente activado" : "Cliente inactivado",
+        `El cliente "${customer.razonSocial}" se ha ${nextStatus === 1 ? "activado" : "inactivado"} correctamente.`
+      );
+    } catch (err) {
+      console.error("Error al cambiar estado:", err);
+    }
   };
 
   return (
@@ -197,6 +337,9 @@ export default function GestionClientes() {
           loading={loading}
           onRefresh={fetchCustomers}
           onView={handleViewDetails}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick} // ✅ PASAR PROP DE ELIMINACIÓN
+          onToggleStatus={handleToggleStatus}
         />
 
         {showPagination && (
@@ -239,19 +382,57 @@ export default function GestionClientes() {
         cliente={selectedCustomer}
       />
 
+      {/* ✅ Modal de Edición del Cliente */}
+      <CustomerEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedEditCustomer(null);
+        }}
+        cliente={selectedEditCustomer}
+        onCustomerUpdated={handleCustomerUpdated}
+      />
+
+      {/* ✅ Modal de Confirmación de Eliminación */}
+      <CustomerDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSelectedDeleteCustomer(null);
+        }}
+        cliente={selectedDeleteCustomer}
+        onConfirm={handleConfirmDelete}
+        loading={isDeleting}
+      />
+
+      {/* ✅ Modal de Conflicto (Historial de Compras) */}
+      <CustomerConflictModal
+        isOpen={isConflictModalOpen}
+        onClose={() => {
+          setIsConflictModalOpen(false);
+          setConflictCustomer(null);
+        }}
+        cliente={conflictCustomer}
+      />
+
       {/* Modal de Registro */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
-          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-white">
+        <DialogContent
+          className="sm:max-w-[1000px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl"
+          style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
+        >
+          {/* Header al estilo de UserCreateModal */}
+          <DialogHeader className="px-7 pt-6 pb-2">
+            <div className="flex items-center gap-2.5 text-emerald-500">
+              <Users className="h-5 w-5" />
+              <DialogTitle className="text-[#0f172a] text-lg font-bold">
                 Registrar Nuevo Cliente
               </DialogTitle>
-              <DialogDescription className="text-emerald-50 opacity-90">
-                Asegúrese de verificar el NIT/Cédula antes de guardar.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
+            </div>
+            <DialogDescription className="text-sm text-slate-500 mt-1">
+              Completa la información técnica y comercial para el nuevo registro en el sistema
+            </DialogDescription>
+          </DialogHeader>
           <div className="p-6 bg-white">
             <CustomerForm
               onCancel={() => setIsModalOpen(false)}

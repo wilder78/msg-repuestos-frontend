@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users } from "lucide-react";
+import { UserPlus } from "lucide-react";
 
 import { useUsers } from "../../hooks/useUsers";
 import PageHeader from "../../components/shared/PageHeader";
@@ -255,7 +255,7 @@ const GestionUsuarios = () => {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
+    <div className="p-8 space-y-6 bg-[#f8f9fa] min-h-screen overflow-auto">
       <SuccessToast
         visible={toastConfig.visible}
         title={toastConfig.title}
@@ -264,15 +264,14 @@ const GestionUsuarios = () => {
       />
 
       <PageHeader
-        icon={Users}
+        icon={UserPlus}
         title="Gestión de Usuarios"
         subtitle="Panel administrativo MSG Repuestos"
         buttonText="Crear Usuario"
         onButtonClick={handleCreateUser}
       />
 
-      <div className="flex-1 p-8 overflow-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
           <TableToolbar
             title="Usuarios del Sistema"
             count={filteredUsers.length}
@@ -302,7 +301,6 @@ const GestionUsuarios = () => {
             onPageChange={(page) => setCurrentPage(page)}
           />
         </div>
-      </div>
 
       {/* MODALES */}
       <UserCreateModal

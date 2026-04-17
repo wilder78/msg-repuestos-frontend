@@ -58,6 +58,17 @@ const UserEditModal = ({
     }
   };
 
+  // ✅ NUEVO: Lógica para detectar si hay cambios reales
+  const hasChanges = () => {
+    if (!usuario || !formData) return false;
+    return (
+      formData.nombreUsuario.trim() !== (usuario.nombreUsuario || "") ||
+      formData.email.trim() !== (usuario.email || "") ||
+      formData.id_rol?.toString() !== (usuario.id_rol?.toString() || "") ||
+      formData.idEstado?.toString() !== (usuario.idEstado?.toString() || "1")
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -191,19 +202,15 @@ const UserEditModal = ({
         {/* Footer */}
         <DialogFooter className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
           <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={loading || saveSuccess}
-            className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
-          >
-            Cancelar
-          </Button>
-          <Button
             onClick={handleSave}
-            disabled={loading || saveSuccess}
+            disabled={loading || saveSuccess || !hasChanges()}
             className={`flex-1 font-semibold shadow-sm transition-all duration-300 ${
-              saveSuccess ? "bg-emerald-600" : "bg-emerald-500 hover:bg-emerald-600"
-            } text-white`}
+              saveSuccess 
+                ? "bg-emerald-600" 
+                : !hasChanges()
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                : "bg-emerald-500 hover:bg-emerald-600 text-white"
+            }`}
           >
             {loading ? (
               <div className="flex items-center gap-2">
@@ -221,6 +228,14 @@ const UserEditModal = ({
                 Guardar Cambios
               </div>
             )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={loading || saveSuccess}
+            className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
+          >
+            Cancelar
           </Button>
         </DialogFooter>
       </DialogContent>

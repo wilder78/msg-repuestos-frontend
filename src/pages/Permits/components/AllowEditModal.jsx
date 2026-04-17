@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
@@ -110,20 +111,24 @@ const AllowEditModal = ({ isOpen, onClose, permiso, onPermitUpdated }) => {
         className="sm:max-w-[600px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl"
         style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
       >
-        {/* ── Header ── */}
-        <DialogHeader className="px-7 pt-7 pb-2">
-          <div className="flex items-center gap-3 text-emerald-500">
-            <div className="p-2 bg-emerald-50 rounded-lg">
-              <Edit2 className="h-5 w-5 text-emerald-600" />
+        {/* ── Header Estilo Premium ── */}
+        <div className="bg-white border-b border-gray-100 px-7 pt-6 pb-4">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500 rounded-xl">
+                <Edit2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-gray-900">
+                  Editar Permiso del Sistema
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 text-sm mt-0.5">
+                  Modifica los detalles técnicos y descriptivos del permiso
+                </DialogDescription>
+              </div>
             </div>
-            <DialogTitle className="text-[#0f172a] text-xl font-bold">
-              Editar Permiso
-            </DialogTitle>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Modifica los detalles del permiso seleccionado en el sistema
-          </p>
-        </DialogHeader>
+          </DialogHeader>
+        </div>
 
         {/* ── Form ── */}
         <div className="px-7 py-6 space-y-5">

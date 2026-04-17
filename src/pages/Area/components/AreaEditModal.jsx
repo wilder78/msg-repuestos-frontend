@@ -59,24 +59,40 @@ const AreaEditModal = ({
     });
   };
 
+  // ✅ NUEVO: Lógica para detectar si hay cambios reales respecto al objeto original 'zone'
+  const hasChanges = () => {
+    if (!zone || !formData) return false;
+    return (
+      formData.nombreZona?.trim() !== (zone.name || "") ||
+      formData.descripcion?.trim() !== (zone.description || "") ||
+      formData.activo !== zone.statusId
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleModalClose}>
       <DialogContent 
         className="sm:max-w-[550px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl"
         style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
       >
-        {/* ── Header ── */}
-        <DialogHeader className="px-7 pt-6 pb-0">
-          <div className="flex items-center gap-2.5 text-emerald-500">
-            <Edit2 className="h-5 w-5" />
-            <DialogTitle className="text-[#0f172a] text-lg font-bold">
-              Editar Zona
-            </DialogTitle>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Modifica la información comercial de la zona seleccionada
-          </p>
-        </DialogHeader>
+        {/* ── Header Estilo Premium ── */}
+        <div className="bg-white border-b border-gray-100 px-7 pt-6 pb-4">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500 rounded-xl">
+                <Edit2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-gray-900">
+                  Editar Zona
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 text-sm mt-0.5">
+                  Modifica la información comercial de la zona seleccionada
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
         {/* ── Form Content ── */}
         <form
@@ -130,11 +146,13 @@ const AreaEditModal = ({
           <DialogFooter className="pt-2 flex gap-3 sm:gap-3">
             <Button
               type="submit"
-              disabled={loading || saveSuccess}
+              disabled={loading || saveSuccess || !hasChanges()}
               className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
                 saveSuccess
-                  ? "bg-emerald-500 shadow-none text-white"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)]"
+                  ? "bg-emerald-500 shadow-none text-white border-0"
+                  : !hasChanges()
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed border-0"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)] border-0"
               }`}
             >
               {saveSuccess ? (

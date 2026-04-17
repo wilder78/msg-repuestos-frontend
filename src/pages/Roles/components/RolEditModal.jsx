@@ -18,6 +18,7 @@ import {
   ChevronUp,
   Palette,
   X,
+  Edit2, // ✅ NUEVA IMPORTACIÓN
 } from "lucide-react";
 
 const getAuthToken = () =>
@@ -269,6 +270,24 @@ const RolEditModal = ({
   const groupedPermissions = groupPermissionsByModule(permissionsList);
   const totalSelected = selectedPermIds.length;
 
+  // ✅ NUEVO: Lógica para detectar si hay cambios reales
+  const hasChanges = () => {
+    const initialNombre = rol?.nombre || "";
+    const initialDesc = rol?.descripcion || "";
+    const initialPermIds = (assignedPermissions || [])
+      .map((p) => p.idPermiso || p.id_permiso || p.id)
+      .filter(Boolean)
+      .sort();
+    
+    const currentPermIds = [...selectedPermIds].sort();
+
+    const permsChanged = JSON.stringify(initialPermIds) !== JSON.stringify(currentPermIds);
+    const nombreChanged = nombre.trim() !== initialNombre;
+    const descChanged = descripcion.trim() !== initialDesc;
+
+    return permsChanged || nombreChanged || descChanged;
+  };
+
   if (!rol) return null;
 
   return (
@@ -277,18 +296,24 @@ const RolEditModal = ({
         className="sm:max-w-[650px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl"
         style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
       >
-        {/* ── Header ── */}
-        <DialogHeader className="px-7 pt-6 pb-0">
-          <div className="flex items-center gap-2.5 text-emerald-500">
-            <ShieldCheck className="h-5 w-5" />
-            <DialogTitle className="text-[#0f172a] text-lg font-bold">
-              Editar Rol
-            </DialogTitle>
-          </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Modifica la información y permisos del rol seleccionado
-          </p>
-        </DialogHeader>
+        {/* ── Header Estilo Premium ── */}
+        <div className="bg-white border-b border-gray-100 px-7 pt-6 pb-4">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500 rounded-xl">
+                <Edit2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-gray-900">
+                  Editar Rol
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 text-sm mt-0.5">
+                  Modifica la información y permisos del rol seleccionado
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
         {/* ── Scrollable Content ── */}
         <div className="px-7 py-6 space-y-6 max-h-[65vh] overflow-y-auto bg-white scrollbar-thin scrollbar-thumb-slate-200">
@@ -377,10 +402,12 @@ const RolEditModal = ({
         <DialogFooter className="px-7 pb-6 flex gap-3 sm:gap-3">
           <Button
             onClick={handleSubmit}
-            disabled={isSaving || saveSuccess || !nombre.trim()}
+            disabled={isSaving || saveSuccess || !nombre.trim() || !hasChanges()}
             className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
               saveSuccess
                 ? "bg-emerald-500 shadow-none text-white border-0"
+                : (!nombre.trim() || !hasChanges())
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed border-0"
                 : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)] border-0"
             }`}
           >
