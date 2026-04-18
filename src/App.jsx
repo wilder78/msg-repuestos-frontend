@@ -9,6 +9,8 @@ import GestionRoles from "./pages/Roles/GestionRoles";
 import GestionEmpleados from "./pages/Employees/GestionEmpleados";
 import GestionClientes from "./pages/Customers/GestionClientes";
 import GestionPermisos from "./pages/Permits/GestionPermisos";
+import GestionProveedor from "./pages/Suppliers/GestionProveedor";
+import GestionCategorias from "./pages/Category/GestionCategorias";
 
 export default function App() {
   return (
@@ -89,6 +91,34 @@ export default function App() {
             <GestionClientes />
           </DashboardLayout>
         }
+      />
+
+      {/* Gestión de Proveedores */}
+      <Route
+        path="/dashboard/suppliers"
+        element={
+          <DashboardLayout>
+            <GestionProveedor />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/proveedores"
+        element={<Navigate to="/dashboard/suppliers" replace />}
+      />
+
+      {/* Gestión de Categorías */}
+      <Route
+        path="/dashboard/categorias"
+        element={
+          <DashboardLayout>
+            <GestionCategorias />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/categorias"
+        element={<Navigate to="/dashboard/categorias" replace />}
       />
 
       {/* ─── Manejo de Error 404 ─────────────────────────────────────── */}

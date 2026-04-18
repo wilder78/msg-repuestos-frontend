@@ -60,7 +60,7 @@ const navigation = [
         label: "Categoría Productos",
         href: "/categorias",
       },
-      { icon: Truck, label: "Proveedores", href: "/proveedores" },
+      { icon: Truck, label: "Proveedores", href: "/dashboard/suppliers" },
       { icon: ShoppingBag, label: "Compras", href: "/compras" },
     ],
   },
