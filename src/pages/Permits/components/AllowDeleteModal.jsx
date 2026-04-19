@@ -21,7 +21,7 @@ const getCurrentUser = () => {
     }
 };
 
-const AllowDeleteModal = ({ isOpen, onClose, permiso, onConfirm, loading }) => {
+const AllowDeleteModal = ({ isOpen, onClose, permiso, onConfirm, loading, error }) => {
   const user = getCurrentUser();
   // Condición: solo idRol 1 o 2 pueden eliminar
   const hasPermission = user && (user.idRol === 1 || user.idRol === 2);
@@ -38,19 +38,21 @@ const AllowDeleteModal = ({ isOpen, onClose, permiso, onConfirm, loading }) => {
         <div className="bg-white px-6 pt-6 pb-4">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className={`p-2.5 ${hasPermission ? "bg-red-100" : "bg-amber-100"} rounded-xl`}>
-                {hasPermission ? (
+              <div className={`p-2.5 ${hasPermission ? (error ? "bg-amber-100" : "bg-red-100") : "bg-amber-100"} rounded-xl text-center`}>
+                {error ? (
+                  <ShieldX className="h-5 w-5 text-amber-600" />
+                ) : hasPermission ? (
                   <Trash2 className="h-5 w-5 text-red-600" />
                 ) : (
                   <ShieldX className="h-5 w-5 text-amber-600" />
                 )}
               </div>
-              <div>
+              <div className="flex-1">
                 <DialogTitle className="text-xl font-bold text-gray-900">
-                  {hasPermission ? "Confirmar Eliminación" : "Acceso Denegado"}
+                  {error ? "Restricción de Sistema" : hasPermission ? "Confirmar Eliminación" : "Acceso Denegado"}
                 </DialogTitle>
-                <DialogDescription className="text-gray-400 text-sm mt-0.5">
-                  {hasPermission ? "Esta acción es irreversible" : "Privilegios insuficientes"}
+                <DialogDescription className="text-gray-400 text-sm mt-0.5 leading-none">
+                  {error ? "Acción protegida" : hasPermission ? "Esta acción es irreversible" : "Privilegios insuficientes"}
                 </DialogDescription>
               </div>
             </div>
@@ -59,7 +61,19 @@ const AllowDeleteModal = ({ isOpen, onClose, permiso, onConfirm, loading }) => {
 
         {/* Cuerpo */}
         <div className="px-6 pb-5 space-y-4 bg-white">
-          {!hasPermission ? (
+          {error ? (
+             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl animate-in fade-in zoom-in duration-300">
+               <ShieldX className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+               <div>
+                 <p className="text-sm text-amber-800 font-bold leading-tight">
+                   Protección de Integridad
+                 </p>
+                 <p className="text-xs text-amber-700 mt-1.5 leading-relaxed font-medium">
+                   {error}
+                 </p>
+               </div>
+             </div>
+          ) : !hasPermission ? (
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
               <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
@@ -76,20 +90,20 @@ const AllowDeleteModal = ({ isOpen, onClose, permiso, onConfirm, loading }) => {
               <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
                 <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 leading-normal">
                     ¿Estás seguro de que deseas eliminar el permiso{" "}
-                    <span className="font-bold text-gray-900">
+                    <span className="font-bold text-gray-900 leading-none">
                       {permiso.nombrePermiso}
                     </span>
                     ?
                   </p>
-                  <p className="text-xs text-gray-500 mt-1.5">
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">
                     Esta acción eliminará el permiso de forma definitiva y afectará a los roles que lo tengan asignado.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden shrink-0">
                 <div className="h-10 w-10 rounded-full bg-white border border-red-100 flex items-center justify-center shrink-0 shadow-sm">
                   <Trash2 className="h-5 w-5 text-red-600" />
                 </div>
@@ -97,9 +111,9 @@ const AllowDeleteModal = ({ isOpen, onClose, permiso, onConfirm, loading }) => {
                   <p className="text-sm font-bold text-gray-800 truncate">
                     {permiso.nombrePermiso}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">{permiso.modulo}</p>
+                  <p className="text-xs text-gray-400 truncate tracking-tight">{permiso.modulo}</p>
                 </div>
-                <span className="text-xs text-gray-400 font-mono bg-white px-2 py-0.5 rounded border border-gray-100">
+                <span className="text-[10px] text-gray-400 font-bold bg-white px-1.5 py-0.5 rounded border border-gray-100 tracking-tighter">
                   ID: #{permiso.idPermiso || permiso.id}
                 </span>
               </div>

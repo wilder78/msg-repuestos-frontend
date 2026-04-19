@@ -39,6 +39,7 @@ const GestionUsuarios = () => {
   const [createFormData, setCreateFormData] = useState(INITIAL_CREATE_STATE);
   const [editFormData, setEditFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const [toastConfig, setToastConfig] = useState({
     visible: false,
@@ -83,6 +84,9 @@ const GestionUsuarios = () => {
     }
     if (!isOpen && type === "create") {
       setCreateFormData(INITIAL_CREATE_STATE);
+    }
+    if (type === "delete") {
+      setDeleteError(null);
     }
     setModals((prev) => ({ ...prev, [type]: isOpen }));
   };
@@ -134,7 +138,7 @@ const GestionUsuarios = () => {
             nombreUsuario: editFormData.nombreUsuario,
             email: editFormData.email,
             idRol: parseInt(editFormData.id_rol, 10),
-            idEstado: parseInt(editFormData.idEstado, 10),
+            idEstado: parseInt(editFormData.id_estado || 1, 10),
           }),
         },
       );
@@ -213,6 +217,10 @@ const GestionUsuarios = () => {
           "Usuario inactivado",
           `El usuario "${deletedName}" se inactivó correctamente.`,
         );
+      } else {
+        // Capturar error 403 o similar del backend
+        const errorData = await res.json();
+        setDeleteError(errorData.message || "No se puede eliminar este usuario por restricciones de seguridad.");
       }
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
@@ -359,6 +367,7 @@ const GestionUsuarios = () => {
         usuario={selectedUser}
         onConfirm={onDeleteConfirm}
         loading={actionLoading}
+        error={deleteError}
       />
     </div>
   );

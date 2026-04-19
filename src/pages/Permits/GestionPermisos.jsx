@@ -31,6 +31,7 @@ const GestionPermisos = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
 
 
@@ -131,7 +132,7 @@ const GestionPermisos = () => {
         fetchPermissions();
       } else {
         const errorData = await res.json();
-        console.error("Error al eliminar:", errorData.message);
+        setDeleteError(errorData.message || "No se puede eliminar: El permiso tiene dependencias activas.");
       }
     } catch (err) {
       console.error("Error en la petición de eliminación:", err);
@@ -217,6 +218,7 @@ const GestionPermisos = () => {
           }}
           onDelete={(p) => {
             setSelectedPermission(p);
+            setDeleteError(null);
             setIsDeleteOpen(true);
           }}
           onToggleStatus={handleToggleStatus}
@@ -256,6 +258,7 @@ const GestionPermisos = () => {
         permiso={selectedPermission}
         onConfirm={handleConfirmDelete}
         loading={isDeleting}
+        error={deleteError}
       />
 
 

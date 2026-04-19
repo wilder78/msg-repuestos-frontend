@@ -39,6 +39,7 @@ const GestionRoles = () => {
     title: "",
     message: "",
   });
+  const [deleteError, setDeleteError] = useState(null);
 
   // ✅ NUEVO: Handler para mostrar el toast con éxito
   const showSuccessToast = (title, message) => {
@@ -219,6 +220,7 @@ const GestionRoles = () => {
 
   const handleDeleteRole = (rol) => {
     setDeleteRole(rol);
+    setDeleteError(null);
     setIsDeleteOpen(true);
   };
 
@@ -253,7 +255,7 @@ const GestionRoles = () => {
         );
       } else {
         const errorData = await response.json();
-        console.error("Error al eliminar rol:", errorData.message);
+        setDeleteError(errorData.message || "No se puede eliminar este rol debido a dependencias con usuarios o permisos.");
       }
     } catch (error) {
       console.error("Error en la petición de eliminación:", error);
@@ -327,6 +329,7 @@ const GestionRoles = () => {
         rol={deleteRole}
         onConfirm={onDeleteConfirm}
         loading={isLoadingDelete}
+        error={deleteError}
       />
 
       <RolEditModal

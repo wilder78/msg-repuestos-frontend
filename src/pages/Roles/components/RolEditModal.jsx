@@ -236,9 +236,8 @@ const RolEditModal = ({
       if (idsToRemove.length > 0) {
         await Promise.all(
           idsToRemove.map((permId) =>
-            authFetch("http://localhost:8080/api/role-permissions/", {
+            authFetch(`http://localhost:8080/api/role-permissions/${rol?.id}/${permId}`, {
               method: "DELETE",
-              body: JSON.stringify({ idRol: rol?.id, idPermiso: permId }),
             }),
           ),
         );
