@@ -20,9 +20,13 @@ const UserDeleteModal = ({
 }) => {
   if (!usuario) return null;
 
-  // El usuario Master (ID 1) no puede ser eliminado
-  const isMaster = usuario.idUsuario === 1 || usuario.nombreUsuario?.toLowerCase() === "master";
-  const displayError = error || (isMaster ? "Este es el usuario raíz del sistema (Master) y no puede ser eliminado para evitar el bloqueo total del panel administrativo." : null);
+  // ✅ DEPURACIÓN: Validación alineada al Backend (id_rol === 1)
+  // Protegemos a cualquier usuario con Rol Master (ID 1) o que explícitamente sea el ID 1
+  const isProtected = usuario.id_rol === 1 || usuario.idUsuario === 1;
+  
+  // Si hay un error del backend (como el 409 de integridad), lo priorizamos.
+  // Si no hay error pero es un usuario protegido, mostramos el mensaje de bloqueo.
+  const displayError = error || (isProtected ? "Este usuario posee un Rol Administrativo (Master) protegido. No puede ser eliminado para garantizar la integridad y el acceso al sistema." : null);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -43,10 +47,10 @@ const UserDeleteModal = ({
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-gray-900">
-                  {displayError ? "Usuario Protegido" : "Confirmar Eliminacion"}
+                  {displayError ? "Acción Restringida" : "Confirmar Eliminación"}
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm mt-0.5">
-                  {displayError ? "Restricción de seguridad" : "Esta accion no se puede deshacer"}
+                  {displayError ? "Seguridad del Sistema" : "Esta acción no se puede deshacer"}
                 </DialogDescription>
               </div>
             </div>
@@ -72,24 +76,23 @@ const UserDeleteModal = ({
               <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm text-gray-700">
-                  ¿Estas seguro de que deseas eliminar al usuario{" "}
+                  ¿Estás seguro de que deseas eliminar al usuario{" "}
                   <span className="font-bold text-gray-900">
                     {usuario.nombreUsuario}
                   </span>?
                 </p>
                 <p className="text-xs text-gray-500 mt-1.5">
-                  Esta accion no se puede deshacer y el usuario perdera todo el
-                  acceso al sistema.
+                  El registro será borrado físicamente de la base de datos. Si el usuario tiene historial, la operación podría fallar.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Datos del usuario afectado */}
+          {/* Mini Card de Usuario */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden">
-            <div className={`h-10 w-10 rounded-full ${isMaster ? "bg-amber-100" : "bg-red-100"} flex items-center justify-center shrink-0 border border-white shadow-sm font-bold`}>
-              <span className={`${isMaster ? "text-amber-600" : "text-red-600"} text-xs`}>
-                {usuario.nombreUsuario?.substring(0, 2).toUpperCase()}
+            <div className={`h-10 w-10 rounded-full ${isProtected ? "bg-amber-100" : "bg-red-100"} flex items-center justify-center shrink-0 border border-white shadow-sm font-bold`}>
+              <span className={`${isProtected ? "text-amber-600" : "text-red-600"} text-xs`}>
+                {usuario.nombreUsuario?.substring(0, 2).toUpperCase() || "??"}
               </span>
             </div>
             <div className="min-w-0">
@@ -99,7 +102,7 @@ const UserDeleteModal = ({
               <p className="text-xs text-gray-400 truncate tracking-tight">{usuario.email}</p>
             </div>
             <span className="ml-auto shrink-0 text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-bold">
-              ID: #{usuario.idUsuario?.toString().padStart(4, "0")}
+              ROL ID: {usuario.id_rol}
             </span>
           </div>
         </div>
@@ -114,6 +117,8 @@ const UserDeleteModal = ({
           >
             {displayError ? "Entendido" : "Cancelar"}
           </Button>
+          
+          {/* ✅ Solo se muestra el botón de eliminar si el usuario no está protegido */}
           {!displayError && (
             <Button
               onClick={onConfirm}
@@ -123,12 +128,12 @@ const UserDeleteModal = ({
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Eliminando...
+                  Procesando...
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <Trash2 className="h-4 w-4" />
-                  Eliminar Usuario
+                  Eliminar Registro
                 </div>
               )}
             </Button>

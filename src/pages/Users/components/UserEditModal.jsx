@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import {
   Edit2, User, Mail, ShieldCheck, Briefcase,
-  Save, AlertCircle, CheckCircle2, Trash2 // Añadido Trash2 para desasignar
+  AlertCircle
 } from "lucide-react";
 
 const UserEditModal = ({
@@ -55,20 +55,18 @@ const UserEditModal = ({
     }
   };
 
-  // ✅ DEPURA: Ahora detecta cambios usando 'id_estado' para coincidir con el backend
+  // Detecta si hay cambios en los campos editables
   const hasChanges = () => {
     if (!usuario || !formData) return false;
     
     const nombreActual = (formData.nombreUsuario || "").trim();
     const emailActual = (formData.email || "").trim();
     const rolActual = formData.id_rol?.toString() || "";
-    const estadoActual = formData.id_estado?.toString() || "1"; // Cambiado a id_estado
 
     return (
       nombreActual !== (usuario.nombreUsuario || "").trim() ||
       emailActual !== (usuario.email || "").trim() ||
-      rolActual !== (usuario.id_rol?.toString() || "") ||
-      estadoActual !== (usuario.id_estado?.toString() || "1")
+      rolActual !== (usuario.id_rol?.toString() || "")
     );
   };
 
@@ -109,7 +107,7 @@ const UserEditModal = ({
                   Editar Usuario
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm mt-0.5">
-                  Modifica la información y estado del usuario
+                  Modifica la información y cargo del usuario
                 </DialogDescription>
               </div>
             </div>
@@ -170,6 +168,7 @@ const UserEditModal = ({
               <Select
                 value={formData.id_rol?.toString()}
                 onValueChange={(val) => onSelectChange("id_rol", val)}
+                disabled={usuario.idUsuario === 1}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar cargo" />
@@ -182,26 +181,13 @@ const UserEditModal = ({
                   ))}
                 </SelectContent>
               </Select>
+              {usuario.idUsuario === 1 && (
+                <p className="text-[10px] text-amber-600 font-medium mt-1">
+                  El rol Master está protegido y no puede ser modificado.
+                </p>
+              )}
             </div>
           </div>
-
-          {/* Gestión de Estado (Nuevo id_estado) */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-gray-700">Estado del Usuario</label>
-            <Select
-              value={formData.id_estado?.toString()}
-              onValueChange={(val) => onSelectChange("id_estado", val)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent style={{ backgroundColor: "#fff" }}>
-                <SelectItem value="1">Activo</SelectItem>
-                <SelectItem value="0">Inactivo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {error && (
             <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2 text-red-600 text-xs">
               <AlertCircle className="h-4 w-4" /> {error}

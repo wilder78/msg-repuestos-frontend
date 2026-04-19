@@ -38,7 +38,8 @@ const UserTable = ({
   onView,
   onEdit,
   onDelete,
-  onToggleStatus,
+  onToggleStatus, // Se mantiene por compatibilidad, pero priorizamos renderStatus
+  renderStatus,
 }) => {
   if (loading) {
     return (
@@ -106,11 +107,15 @@ const UserTable = ({
               </div>
             </TableCell>
             <TableCell>
-              {/* Implementación del componente genérico */}
-              <StatusBadge
-                statusId={u.idEstado}
-                onClick={() => onToggleStatus(u)}
-              />
+              {/* Priorizar renderStatus si se proporciona */}
+              {renderStatus ? (
+                renderStatus(u)
+              ) : (
+                <StatusBadge
+                  statusId={u.id_estado || u.idEstado}
+                  onClick={() => onToggleStatus && onToggleStatus(u)}
+                />
+              )}
             </TableCell>
             <TableCell className="text-right pr-6">
               <ActionButtons
@@ -118,8 +123,8 @@ const UserTable = ({
                 onView={onView}
                 onEdit={onEdit}
                 onDelete={onDelete}
-                disabledEdit={u.idEstado !== 1}
-                disabledDelete={u.idEstado !== 1}
+                disabledEdit={!((u.id_estado || u.idEstado) == 1)}
+                disabledDelete={!((u.id_estado || u.idEstado) == 1)}
                 labels={{
                   view: "Ver usuario",
                   edit: "Editar usuario",
