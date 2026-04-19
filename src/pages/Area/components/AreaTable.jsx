@@ -8,12 +8,13 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { Loader2 } from "lucide-react";
-import StatusBadge from "../../../components/shared/StatusBadge";
+import StatusToggleButton from "../../../components/shared/StatusToggleButton";
 import ActionButtons from "../../../components/shared/ActionButtons";
 
 const AreaTable = ({
   zones,
   loading,
+  authFetch,
   onView,
   onEdit,
   onDelete,
@@ -50,15 +51,22 @@ const AreaTable = ({
       <TableBody>
         {zones.map((zone) => (
           <TableRow key={zone.id} className="group hover:bg-slate-50/50 transition-colors">
-            <TableCell className="pl-6 font-medium text-slate-700">{zone.id}</TableCell>
+            <TableCell className="pl-6 font-medium text-slate-700">#{zone.id}</TableCell>
             <TableCell>
               <span className="font-semibold text-slate-900">{zone.name}</span>
             </TableCell>
             <TableCell>
-              <span className="text-sm text-slate-500">{zone.description}</span>
+              <span className="text-sm text-slate-500 line-clamp-1 max-w-[300px]">{zone.description}</span>
             </TableCell>
             <TableCell>
-              <StatusBadge statusId={zone.statusId} onClick={() => onToggleStatus(zone)} />
+              <StatusToggleButton
+                id={zone.id}
+                currentStatus={zone.statusId}
+                apiUrl="http://localhost:8080/api/zonas"
+                onSuccess={onToggleStatus}
+                authFetch={authFetch}
+                fieldName="id_estado"
+              />
             </TableCell>
             <TableCell className="text-right pr-6">
               <ActionButtons
@@ -66,8 +74,8 @@ const AreaTable = ({
                 onView={onView}
                 onEdit={onEdit}
                 onDelete={onDelete}
-                disabledEdit={zone.statusId !== 1}
-                disabledDelete={zone.statusId !== 1}
+                disabledEdit={zone.statusId === 2}
+                disabledDelete={zone.statusId === 2}
                 labels={{
                   view: "Ver zona",
                   edit: "Editar zona",

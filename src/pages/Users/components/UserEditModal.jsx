@@ -74,10 +74,11 @@ const UserEditModal = ({
   const handleRevokePermission = async (idPermiso) => {
     try {
       const idRol = formData.id_rol; 
-      // El backend ahora espera: DELETE /api/role-permissions/:idRol/:idPermiso
-      const response = await fetch(`http://localhost:8080/api/role-permissions/${idRol}/${idPermiso}`, {
+      // ✅ DEPURA: Ruta verificada por Postman (DELETE con Body)
+      const response = await fetch(`http://localhost:8080/api/role-permissions/revoke`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idRol: Number(idRol), idPermiso: Number(idPermiso) })
       });
 
       if (!response.ok) throw new Error("No se pudo revocar el permiso");

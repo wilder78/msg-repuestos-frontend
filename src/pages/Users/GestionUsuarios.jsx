@@ -13,15 +13,13 @@ import UserDeleteModal from "./components/UserDeleteModal";
 import UserTable from "./components/UserTable";
 import SuccessToast from "../../components/ui/SuccessToast";
 
-// Componente global para el cambio de estado
-import StatusToggleButton from "../../components/shared/StatusToggleButton";
 
 const INITIAL_CREATE_STATE = {
   nombreUsuario: "",
   email: "",
   password: "",
   id_rol: "",
-  id_estado: "1", // Depurado: id_estado
+  id_estado: "1",
 };
 
 const GestionUsuarios = () => {
@@ -67,7 +65,7 @@ const GestionUsuarios = () => {
     showToast("Usuario registrado", `El usuario "${name}" ha sido creado correctamente.`);
   };
 
-  // ✅ Handler para el cambio de estado (Toggle)
+  // ✅ Handler para el cambio de estado (Éxito desde componente global)
   const handleStatusChangeSuccess = (userId, nextStatus) => {
     setUsers((prev) =>
       prev.map((u) => (u.idUsuario === userId ? { ...u, id_estado: nextStatus, idEstado: nextStatus } : u))
@@ -76,32 +74,6 @@ const GestionUsuarios = () => {
       nextStatus === 1 ? "Usuario activado" : "Usuario inactivado",
       "El estado se actualizó correctamente."
     );
-  };
-
-  const handleToggleUserStatus = async (user) => {
-    const currentStatus = user.idEstado || user.id_estado;
-    const nextStatus = currentStatus == 1 ? 2 : 1;
-
-    // ✅ Validación: El usuario Master (ID 1) no puede ser inactivado
-    if (user.idUsuario === 1 && nextStatus !== 1) {
-      showToast("Acción no permitida", "El usuario Master es vital para el sistema y no puede ser inactivado.");
-      return;
-    }
-    
-    try {
-      const res = await authFetch(`http://localhost:8080/api/users/${user.idUsuario}`, {
-        method: "PUT",
-        body: JSON.stringify({ idEstado: nextStatus }),
-      });
-
-      if (res.ok) {
-        handleStatusChangeSuccess(user.idUsuario, nextStatus);
-      } else {
-        console.error("Error al cambiar el estado");
-      }
-    } catch (error) {
-      console.error("Error de red:", error);
-    }
   };
 
   // ─── Control de Modales ───────────────────────────────────────────────────
@@ -255,12 +227,13 @@ const GestionUsuarios = () => {
           users={paginatedUsers}
           roleMap={roleMap}
           loading={loading}
+          authFetch={authFetch}
           getAvatarColor={getAvatarColor}
           getInitials={getInitials}
           onView={(u) => toggleModal("view", true, u)}
           onEdit={(u) => toggleModal("edit", true, u)}
           onDelete={(u) => toggleModal("delete", true, u)}
-          onToggleStatus={handleToggleUserStatus}
+          onToggleStatus={handleStatusChangeSuccess}
         />
 
         <TablePagination

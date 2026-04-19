@@ -95,15 +95,19 @@ const UserDeleteModal = ({
                 {usuario.nombreUsuario?.substring(0, 2).toUpperCase() || "??"}
               </span>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-gray-800 break-words leading-tight">
                 {usuario.nombreUsuario}
               </p>
-              <p className="text-xs text-gray-400 truncate tracking-tight">{usuario.email}</p>
+              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed break-words">
+                {usuario.email}
+              </p>
             </div>
-            <span className="ml-auto shrink-0 text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-bold">
-              ROL ID: {usuario.id_rol}
-            </span>
+            <div className="shrink-0 ml-3">
+              <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap">
+                ID: {usuario.idUsuario}
+              </span>
+            </div>
           </div>
         </div>
 

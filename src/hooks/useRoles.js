@@ -87,6 +87,6 @@ export const useRoles = () => {
     fetchRolesData();
   }, [fetchRolesData]);
 
-  // ✅ setRoles expuesto para actualizaciones optimistas
-  return { roles, setRoles, loading, refresh: fetchRolesData };
+  // ✅ setRoles y authFetch expuestos para actualizaciones
+  return { roles, setRoles, loading, refresh: fetchRolesData, authFetch };
 };

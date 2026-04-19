@@ -39,11 +39,11 @@ const handleSubmit = async (event) => {
     return;
   }
 
-  // Payload limpio — ajusta los keys según lo que espera tu API
+  // Payload para la API (usando snake_case para compatibilidad con el backend)
   const payload = {
     nombre_zona: form.nombreZona.trim(),
     descripcion: form.descripcion.trim(),
-    activo: 1,
+    id_estado: 1,
   };
   console.log("Enviar payload de zona", payload);
 

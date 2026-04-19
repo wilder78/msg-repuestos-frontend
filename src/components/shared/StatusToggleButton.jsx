@@ -1,54 +1,79 @@
 import React, { useState } from "react";
-import { Switch } from "../ui/switch";
 import { Loader2 } from "lucide-react";
 
-const StatusToggleButton = ({ 
-  id, 
-  currentStatus, 
-  apiUrl, 
-  onSuccess, 
+/**
+ * StatusToggleButton - Componente global para el cambio de estado (1: Activo, 2: Inactivo)
+ * Renderiza un botón con estilo de "Badge" interactivo.
+ */
+const StatusToggleButton = ({
+  id,
+  currentStatus,
+  apiUrl,
+  onSuccess,
   authFetch,
-  fieldName = "id_estado" // Nombre del campo en el JSON (id_estado o activo)
+  disabled = false,
+  fieldName = "idEstado",
 }) => {
   const [loading, setLoading] = useState(false);
 
-  const handleToggle = async () => {
-    // Definimos la lógica: si es 1 (activo) pasa a 2 (inactivo) o viceversa
-    // Ajusta los números según tu base de datos (ej. 1 y 0)
-    const nextStatus = currentStatus === 1 ? 2 : 1;
+  // Determinar si está activo
+  const isActive = currentStatus === 1 || currentStatus === "1";
+
+  const handleToggle = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     
+    if (disabled || loading) return;
+
+    // Lógica estándar: 1 -> 2, cualquier otro -> 1
+    const nextStatus = isActive ? 2 : 1;
+
     setLoading(true);
     try {
-      const res = await authFetch(`${apiUrl}/${id}`, {
+      // Limpieza de URL para evitar doble slash o slash faltante
+      const base = apiUrl.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
+      const url = `${base}/${id}`;
+
+      const res = await authFetch(url, {
         method: "PUT",
         body: JSON.stringify({ [fieldName]: nextStatus }),
       });
 
       if (res.ok) {
-        onSuccess(id, nextStatus);
+        if (onSuccess) onSuccess(id, nextStatus);
       } else {
-        console.error("Error al cambiar el estado");
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Error al cambiar el estado:", errorData.message || res.statusText);
       }
     } catch (error) {
-      console.error("Error de red:", error);
+      console.error("Error de red en StatusToggleButton:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <Loader2 className="h-4 w-4 animate-spin text-gray-400" />;
+  if (loading) return <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />;
 
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        checked={currentStatus === 1}
-        onCheckedChange={handleToggle}
-        className={`${currentStatus === 1 ? 'bg-emerald-500' : 'bg-gray-300'}`}
-      />
-      <span className={`text-xs font-medium ${currentStatus === 1 ? 'text-emerald-600' : 'text-gray-400'}`}>
-        {currentStatus === 1 ? "Activo" : "Inactivo"}
+    <button
+      onClick={handleToggle}
+      disabled={disabled}
+      className={`
+        relative px-3 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 border
+        flex items-center gap-1.5 group
+        ${isActive 
+          ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" 
+          : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"}
+        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+      `}
+    >
+      {/* Punto de estado sutil */}
+      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isActive ? "bg-emerald-500" : "bg-slate-400"}`}></span>
+      
+      <span className="capitalize">
+        {isActive ? "Activo" : "Inactivo"}
       </span>
-    </div>
+    </button>
   );
 };
 

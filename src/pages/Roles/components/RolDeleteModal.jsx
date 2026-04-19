@@ -79,13 +79,19 @@ const RolDeleteModal = ({ isOpen, onClose, rol, onConfirm, loading, error }) => 
                 {rol.nombre?.substring(0, 2).toUpperCase()}
               </span>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-800 truncate">{rol.nombre}</p>
-              <p className="text-xs text-slate-400 truncate tracking-tight">{rol.descripcion || "Sin descripción"}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-slate-800 break-words leading-tight">
+                {rol.nombre}
+              </p>
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed break-words">
+                {rol.descripcion || "Sin descripción"}
+              </p>
             </div>
-            <span className="ml-auto shrink-0 text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold">
-              ID: #{rol.id?.toString().padStart(3, "0")}
-            </span>
+            <div className="shrink-0 ml-3">
+              <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap">
+                ID: #{rol.id?.toString().padStart(3, "0")}
+              </span>
+            </div>
           </div>
         </div>
 

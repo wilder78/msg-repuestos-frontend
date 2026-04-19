@@ -55,13 +55,19 @@ const SupplierDeleteModal = ({ isOpen, onClose, proveedor, onConfirm, loading, e
             <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-sm text-red-600">
               <Building2 className="h-5 w-5" />
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-800 truncate">{proveedor.nombre}</p>
-              <p className="text-xs text-slate-400 font-medium tracking-tight">NIT: {proveedor.nit || "N/A"}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-slate-800 break-words leading-tight">
+                {proveedor.nombre}
+              </p>
+              <p className="text-xs text-slate-400 mt-1 font-bold break-words uppercase tracking-tighter">
+                NIT: {proveedor.nit || "N/A"}
+              </p>
             </div>
-            <span className="ml-auto text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold">
-              ID: #{proveedor.id?.toString().padStart(3, "0")}
-            </span>
+            <div className="shrink-0 ml-3">
+              <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded font-bold uppercase whitespace-nowrap">
+                ID: #{proveedor.id?.toString().padStart(3, "0")}
+              </span>
+            </div>
           </div>
 
           {error && (

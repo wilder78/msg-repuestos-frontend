@@ -58,16 +58,18 @@ const CategoryDeleteModal = ({ isOpen, onClose, categoria, onConfirm, loading, e
               <Tag className="h-5 w-5 text-red-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-800 truncate">
+              <p className="text-sm font-bold text-slate-800 break-words leading-tight">
                 {categoria.nombre}
               </p>
-              <p className="text-xs text-slate-400 truncate">
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed break-words">
                 {categoria.descripcion || "Sin descripción"}
               </p>
             </div>
-            <span className="shrink-0 text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold">
-              ID: #{categoria.id?.toString().padStart(3, "0")}
-            </span>
+            <div className="shrink-0 ml-3">
+              <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap">
+                ID: #{categoria.id?.toString().padStart(3, "0")}
+              </span>
+            </div>
           </div>
 
           {error && (

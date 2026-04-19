@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { Loader2, ShieldCheck, Calendar } from "lucide-react";
-import StatusBadge from "../../../components/shared/StatusBadge";
+import StatusToggleButton from "../../../components/shared/StatusToggleButton";
 import ActionButtons from "../../../components/shared/ActionButtons";
 
 // --- Funciones de ayuda internas ---
@@ -26,6 +26,7 @@ const getRoleColor = (rolName) => {
 const RolesTable = ({ 
   roles, 
   loading, 
+  authFetch,
   onView, 
   onEdit, 
   onDelete, 
@@ -92,11 +93,16 @@ const RolesTable = ({
               </div>
             </TableCell>
 
-            {/* Columna de Estado usando StatusBadge */}
+            {/* Columna de Estado usando StatusToggleButton */}
             <TableCell>
-              <StatusBadge
-                statusId={rol.idEstado}
-                onClick={() => onToggleStatus && onToggleStatus(rol)}
+              <StatusToggleButton
+                id={rol.id}
+                currentStatus={rol.idEstado}
+                apiUrl="http://localhost:8080/api/roles"
+                onSuccess={onToggleStatus}
+                authFetch={authFetch}
+                disabled={rol.id === 1} // Protección Master para el rol 1
+                fieldName="idEstado"
               />
             </TableCell>
 

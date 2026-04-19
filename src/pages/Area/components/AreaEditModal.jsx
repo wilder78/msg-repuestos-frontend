@@ -50,10 +50,10 @@ const AreaEditModal = ({
 
   // Helper para cambiar el estado en el formData (que vive en el padre)
   const toggleInternalStatus = () => {
-    const nextStatus = formData.activo === 1 ? 0 : 1;
+    const nextStatus = formData.idEstado === 1 ? 2 : 1;
     onInputChange({
       target: {
-        name: "activo",
+        name: "idEstado",
         value: nextStatus,
       },
     });
@@ -65,7 +65,7 @@ const AreaEditModal = ({
     return (
       formData.nombreZona?.trim() !== (zone.name || "") ||
       formData.descripcion?.trim() !== (zone.description || "") ||
-      formData.activo !== zone.statusId
+      formData.idEstado !== zone.statusId
     );
   };
 
@@ -121,7 +121,7 @@ const AreaEditModal = ({
                 <ShieldCheck className="h-3 w-3 text-slate-400" /> Estado Actual
               </Label>
               <StatusBadge 
-                statusId={formData.activo} 
+                statusId={formData.idEstado} 
                 onClick={toggleInternalStatus}
               />
             </div>

@@ -72,10 +72,10 @@ const CustomerDeleteModal = ({
               <Building2 className="h-6 w-6 text-slate-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-800 truncate">
+              <p className="text-sm font-bold text-slate-800 break-words leading-tight">
                 {cliente.razonSocial}
               </p>
-              <p className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
+              <p className="text-[11px] font-mono text-slate-400 mt-1 flex items-center gap-1.5 uppercase tracking-wider break-words">
                 {cliente.tipoDocumento?.sigla || "NIT"}: {cliente.numeroDocumento}
               </p>
             </div>

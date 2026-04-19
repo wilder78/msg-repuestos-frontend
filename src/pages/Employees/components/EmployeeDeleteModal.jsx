@@ -132,17 +132,19 @@ const EmployeeDeleteModal = ({
                     {initials}
                   </span>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">
+                <div className="flex-1 min-w-0 px-1">
+                  <p className="text-sm font-bold text-gray-800 break-words leading-tight">
                     {empleado.nombres} {empleado.apellidos}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 mt-1 break-words leading-relaxed">
                     {empleado.email || "Sin email"}
                   </p>
                 </div>
-                <span className="ml-auto text-xs text-gray-400 font-medium">
-                  ID: #{empleado.id?.toString().padStart(4, "0")}
-                </span>
+                <div className="shrink-0 ml-2">
+                  <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-1 rounded-md whitespace-nowrap uppercase">
+                    ID: #{empleado.id?.toString().padStart(4, "0")}
+                  </span>
+                </div>
               </div>
             </div>
 

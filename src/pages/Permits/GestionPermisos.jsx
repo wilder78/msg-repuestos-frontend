@@ -16,8 +16,11 @@ import AllowDeleteModal from "./components/AllowDeleteModal";
 
 
 
+import { useUsers } from "../../hooks/useUsers";
+
 
 const GestionPermisos = () => {
+  const { authFetch } = useUsers();
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,9 +36,6 @@ const GestionPermisos = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
 
-
-
-
   const [toastConfig, setToastConfig] = useState({
     visible: false,
     title: "",
@@ -46,17 +46,12 @@ const GestionPermisos = () => {
   const fetchPermissions = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      
-      const response = await fetch("http://localhost:8080/api/permissions", {
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-      });
+      const [resPerms] = await Promise.all([
+        authFetch("http://localhost:8080/api/permissions"),
+      ]);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (resPerms.ok) {
+        const data = await resPerms.json();
         const rawData = Array.isArray(data) ? data : data.data || [];
         
         // Normalización para manejar snake_case y asegurar idEstado
@@ -74,6 +69,17 @@ const GestionPermisos = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handler para actualizar la lista local después de un toggle exitoso
+  const handleStatusUpdate = (id, nextStatus) => {
+    setPermissions((prev) =>
+      prev.map((p) => (p.idPermiso === id || p.id === id ? { ...p, idEstado: nextStatus } : p))
+    );
+    showToast(
+      nextStatus === 1 ? "Permiso activado" : "Permiso inactivado",
+      "El estado se actualizó correctamente."
+    );
   };
 
   useEffect(() => {
@@ -118,12 +124,8 @@ const GestionPermisos = () => {
     const id = permiso.idPermiso || permiso.id;
     try {
       setIsDeleting(true);
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      const res = await fetch(`http://localhost:8080/api/permissions/${id}`, {
+      const res = await authFetch(`http://localhost:8080/api/permissions/${id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
       });
 
       if (res.ok) {
@@ -141,42 +143,6 @@ const GestionPermisos = () => {
     }
   };
 
-
-
-
-  const handleToggleStatus = async (permission) => {
-    const nextStatus = permission.idEstado === 1 ? 2 : 1;
-    const id = permission.idPermiso || permission.id;
-    
-    try {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      // Se intenta con plural, si falla el 404 podría ser por falta del endpoint en el backend
-      const res = await fetch(`http://localhost:8080/api/permissions/${id}`, {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ idEstado: nextStatus }),
-      });
-
-      if (res.ok) {
-        setPermissions((prev) =>
-          prev.map((p) =>
-            (p.idPermiso === id || p.id === id) ? { ...p, idEstado: nextStatus } : p
-          )
-        );
-        showToast(
-          nextStatus === 1 ? "Permiso activado" : "Permiso inactivado",
-          `El permiso "${permission.nombrePermiso}" se ${
-            nextStatus === 1 ? "activó" : "inactivó"
-          } correctamente.`
-        );
-      }
-    } catch (err) {
-      console.error("Error al cambiar estado:", err);
-    }
-  };
 
   return (
     <div className="p-8 space-y-6 bg-[#f8f9fa] min-h-screen">
@@ -211,6 +177,7 @@ const GestionPermisos = () => {
         <AllowTable
           permissions={paginatedPermissions}
           loading={loading}
+          authFetch={authFetch}
           onView={handleViewDetails}
           onEdit={(p) => {
             setSelectedPermission(p);
@@ -221,8 +188,7 @@ const GestionPermisos = () => {
             setDeleteError(null);
             setIsDeleteOpen(true);
           }}
-          onToggleStatus={handleToggleStatus}
-
+          onToggleStatus={handleStatusUpdate}
         />
 
 

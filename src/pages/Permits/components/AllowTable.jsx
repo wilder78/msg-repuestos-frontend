@@ -8,16 +8,17 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { Key, Loader2, Info } from "lucide-react";
-import StatusBadge from "../../../components/shared/StatusBadge";
 import ActionButtons from "../../../components/shared/ActionButtons";
+import StatusToggleButton from "../../../components/shared/StatusToggleButton";
 
 const AllowTable = ({
   permissions,
   loading,
+  authFetch,
   onView,
   onEdit,
   onDelete,
-  onToggleStatus,
+  onToggleStatus, // handleStatusUpdate del padre
 }) => {
   if (loading) {
     return (
@@ -77,9 +78,13 @@ const AllowTable = ({
               </div>
             </TableCell>
             <TableCell>
-              <StatusBadge
-                statusId={p.idEstado}
-                onClick={() => onToggleStatus(p)}
+              <StatusToggleButton
+                id={p.idPermiso}
+                currentStatus={p.idEstado}
+                apiUrl="http://localhost:8080/api/permissions"
+                onSuccess={onToggleStatus}
+                authFetch={authFetch}
+                fieldName="idEstado"
               />
             </TableCell>
             <TableCell className="text-right pr-6">

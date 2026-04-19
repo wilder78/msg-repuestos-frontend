@@ -9,10 +9,10 @@ import { ShieldCheck } from "lucide-react";
 import PageHeader from "../../components/shared/PageHeader";
 import TableToolbar from "../../components/shared/TableToolbar";
 import TablePagination from "../../components/shared/TablePagination";
-import SuccessToast from "../../components/ui/SuccessToast"; // ✅ Importado
+import SuccessToast from "../../components/ui/SuccessToast";
 
 const GestionRoles = () => {
-  const { roles, setRoles, loading, refresh } = useRoles();
+  const { roles, setRoles, loading, refresh, authFetch } = useRoles();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rolesPerPage = 8;
@@ -89,38 +89,14 @@ const GestionRoles = () => {
     );
   };
 
-  const handleToggleStatus = async (rol) => {
-    const nextStatus = rol.idEstado === 1 ? 2 : 1;
-    try {
-      const token =
-        localStorage.getItem("token") || sessionStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8080/api/roles/${rol.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...rol, idEstado: nextStatus }),
-        },
-      );
-
-      if (response.ok) {
-        setRoles((prev) =>
-          prev.map((r) =>
-            r.id === rol.id ? { ...r, idEstado: nextStatus } : r,
-          ),
-        );
-        // Opcional: Mostrar toast al cambiar estado
-        showSuccessToast(
-          "Estado actualizado",
-          `El rol "${rol.nombre}" ahora está ${nextStatus === 1 ? "Activo" : "Inactivo"}.`,
-        );
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
+  const handleStatusChangeSuccess = (rolId, nextStatus) => {
+    setRoles((prev) =>
+      prev.map((r) => (r.id === rolId ? { ...r, idEstado: nextStatus } : r))
+    );
+    showSuccessToast(
+      "Estado actualizado",
+      `El rol ahora está ${nextStatus === 1 ? "Activo" : "Inactivo"}.`
+    );
   };
 
   // --- Memorización de datos (sin cambios) ---
@@ -299,10 +275,11 @@ const GestionRoles = () => {
           loading={
             loading || isLoadingDetails || isLoadingEdit || isLoadingDelete
           }
+          authFetch={authFetch}
           onView={handleViewDetails}
           onEdit={handleEditRole}
           onDelete={handleDeleteRole}
-          onToggleStatus={handleToggleStatus}
+          onToggleStatus={handleStatusChangeSuccess}
           onRefresh={refresh}
         />
 

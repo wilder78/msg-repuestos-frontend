@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { Mail, Loader2 } from "lucide-react";
-import StatusBadge from "../../../components/shared/StatusBadge";
+import StatusToggleButton from "../../../components/shared/StatusToggleButton";
 import ActionButtons from "../../../components/shared/ActionButtons";
 
 // --- Funciones de ayuda internas (Evitan errores de "is not a function") ---
@@ -35,11 +35,11 @@ const UserTable = ({
   users,
   roleMap,
   loading,
+  authFetch,
   onView,
   onEdit,
   onDelete,
-  onToggleStatus, // Se mantiene por compatibilidad, pero priorizamos renderStatus
-  renderStatus,
+  onToggleStatus, // handleStatusChangeSuccess del padre
 }) => {
   if (loading) {
     return (
@@ -107,15 +107,15 @@ const UserTable = ({
               </div>
             </TableCell>
             <TableCell>
-              {/* Priorizar renderStatus si se proporciona */}
-              {renderStatus ? (
-                renderStatus(u)
-              ) : (
-                <StatusBadge
-                  statusId={u.id_estado || u.idEstado}
-                  onClick={() => onToggleStatus && onToggleStatus(u)}
-                />
-              )}
+              <StatusToggleButton
+                id={u.idUsuario}
+                currentStatus={u.id_estado || u.idEstado}
+                apiUrl="http://localhost:8080/api/users"
+                onSuccess={onToggleStatus} 
+                authFetch={authFetch}
+                disabled={u.idUsuario === 1} 
+                fieldName="idEstado"
+              />
             </TableCell>
             <TableCell className="text-right pr-6">
               <ActionButtons
