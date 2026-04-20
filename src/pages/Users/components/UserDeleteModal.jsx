@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
-import { Trash2, AlertTriangle } from "lucide-react";
+import { Trash2, AlertTriangle, ShieldX } from "lucide-react";
 
 const UserDeleteModal = ({
   isOpen,
@@ -16,28 +16,41 @@ const UserDeleteModal = ({
   usuario,
   onConfirm,
   loading,
+  error
 }) => {
   if (!usuario) return null;
+
+  // ✅ DEPURACIÓN: Validación alineada al Backend (id_rol === 1)
+  // Protegemos a cualquier usuario con Rol Master (ID 1) o que explícitamente sea el ID 1
+  const isProtected = usuario.id_rol === 1 || usuario.idUsuario === 1;
+  
+  // Si hay un error del backend (como el 409 de integridad), lo priorizamos.
+  // Si no hay error pero es un usuario protegido, mostramos el mensaje de bloqueo.
+  const displayError = error || (isProtected ? "Este usuario posee un Rol Administrativo (Master) protegido. No puede ser eliminado para garantizar la integridad y el acceso al sistema." : null);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-[420px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl"
+        className="sm:max-w-[440px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl"
         style={{ backgroundColor: "#ffffff" }}
       >
         {/* Header */}
         <div className="bg-white px-6 pt-6 pb-4">
           <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-red-100 rounded-xl">
-                <Trash2 className="h-5 w-5 text-red-600" />
+            <div className="flex items-center gap-3 text-left">
+              <div className={`p-2.5 ${displayError ? "bg-amber-100" : "bg-red-100"} rounded-xl text-center shrink-0`}>
+                {displayError ? (
+                  <ShieldX className="h-5 w-5 text-amber-600" />
+                ) : (
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                )}
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-gray-900">
-                  Confirmar Eliminacion
+                  {displayError ? "Acción Restringida" : "Confirmar Eliminación"}
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm mt-0.5">
-                  Esta accion no se puede deshacer
+                  {displayError ? "Seguridad del Sistema" : "Esta acción no se puede deshacer"}
                 </DialogDescription>
               </div>
             </div>
@@ -46,47 +59,55 @@ const UserDeleteModal = ({
 
         {/* Cuerpo */}
         <div className="px-6 pb-5 space-y-4 bg-white">
-
-          {/* Advertencia */}
-          <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
-            <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-gray-700">
-                Estas seguro de que deseas eliminar al usuario{" "}
-                <span className="font-bold text-gray-900">
-                  {usuario.nombreUsuario}
-                </span>
-                ?
-              </p>
-              <p className="text-xs text-gray-500 mt-1.5">
-                Esta accion no se puede deshacer y el usuario perdera todo el
-                acceso al sistema.
-              </p>
+          {displayError ? (
+            <div className="flex items-start gap-4 p-4 bg-amber-50 border border-amber-100 rounded-xl animate-in fade-in zoom-in duration-300">
+              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-amber-800 font-bold leading-tight">
+                  No se permite eliminar este usuario
+                </p>
+                <p className="text-[12px] text-amber-700 mt-2 leading-relaxed">
+                  {displayError}
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
+              <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-700">
+                  ¿Estás seguro de que deseas eliminar al usuario{" "}
+                  <span className="font-bold text-gray-900">
+                    {usuario.nombreUsuario}
+                  </span>?
+                </p>
+                <p className="text-xs text-gray-500 mt-1.5">
+                  El registro será borrado físicamente de la base de datos. Si el usuario tiene historial, la operación podría fallar.
+                </p>
+              </div>
+            </div>
+          )}
 
-          {/* Datos del usuario afectado */}
-          <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
-            <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-              <span className="text-red-600 text-sm font-bold">
-                {usuario.nombreUsuario
-                  ?.trim()
-                  .split(/\s+/)
-                  .map((w) => w[0])
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase()}
+          {/* Mini Card de Usuario */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+            <div className={`h-10 w-10 rounded-full ${isProtected ? "bg-amber-100" : "bg-red-100"} flex items-center justify-center shrink-0 border border-white shadow-sm font-bold`}>
+              <span className={`${isProtected ? "text-amber-600" : "text-red-600"} text-xs`}>
+                {usuario.nombreUsuario?.substring(0, 2).toUpperCase() || "??"}
               </span>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-gray-800 break-words leading-tight">
                 {usuario.nombreUsuario}
               </p>
-              <p className="text-xs text-gray-400">{usuario.email}</p>
+              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed break-words">
+                {usuario.email}
+              </p>
             </div>
-            <span className="ml-auto text-xs text-gray-400 font-medium">
-              ID: #{usuario.idUsuario?.toString().padStart(4, "0")}
-            </span>
+            <div className="shrink-0 ml-3">
+              <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-1 rounded-md font-bold uppercase whitespace-nowrap">
+                ID: {usuario.idUsuario}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -96,27 +117,31 @@ const UserDeleteModal = ({
             variant="outline"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
+            className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50 rounded-xl h-11"
           >
-            Cancelar
+            {displayError ? "Entendido" : "Cancelar"}
           </Button>
-          <Button
-            onClick={onConfirm}
-            disabled={loading}
-            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold shadow-sm"
-          >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Eliminando...
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Trash2 className="h-4 w-4" />
-                Eliminar Usuario
-              </div>
-            )}
-          </Button>
+          
+          {/* ✅ Solo se muestra el botón de eliminar si el usuario no está protegido */}
+          {!displayError && (
+            <Button
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold shadow-sm rounded-xl h-11"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Procesando...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar Registro
+                </div>
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -9,10 +9,10 @@ import { ShieldCheck } from "lucide-react";
 import PageHeader from "../../components/shared/PageHeader";
 import TableToolbar from "../../components/shared/TableToolbar";
 import TablePagination from "../../components/shared/TablePagination";
-import SuccessToast from "../../components/ui/SuccessToast"; // ✅ Importado
+import SuccessToast from "../../components/ui/SuccessToast";
 
 const GestionRoles = () => {
-  const { roles, setRoles, loading, refresh } = useRoles();
+  const { roles, setRoles, loading, refresh, authFetch } = useRoles();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rolesPerPage = 8;
@@ -39,6 +39,7 @@ const GestionRoles = () => {
     title: "",
     message: "",
   });
+  const [deleteError, setDeleteError] = useState(null);
 
   // ✅ NUEVO: Handler para mostrar el toast con éxito
   const showSuccessToast = (title, message) => {
@@ -88,38 +89,14 @@ const GestionRoles = () => {
     );
   };
 
-  const handleToggleStatus = async (rol) => {
-    const nextStatus = rol.idEstado === 1 ? 2 : 1;
-    try {
-      const token =
-        localStorage.getItem("token") || sessionStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8080/api/roles/${rol.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...rol, idEstado: nextStatus }),
-        },
-      );
-
-      if (response.ok) {
-        setRoles((prev) =>
-          prev.map((r) =>
-            r.id === rol.id ? { ...r, idEstado: nextStatus } : r,
-          ),
-        );
-        // Opcional: Mostrar toast al cambiar estado
-        showSuccessToast(
-          "Estado actualizado",
-          `El rol "${rol.nombre}" ahora está ${nextStatus === 1 ? "Activo" : "Inactivo"}.`,
-        );
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
+  const handleStatusChangeSuccess = (rolId, nextStatus) => {
+    setRoles((prev) =>
+      prev.map((r) => (r.id === rolId ? { ...r, idEstado: nextStatus } : r))
+    );
+    showSuccessToast(
+      "Estado actualizado",
+      `El rol ahora está ${nextStatus === 1 ? "Activo" : "Inactivo"}.`
+    );
   };
 
   // --- Memorización de datos (sin cambios) ---
@@ -219,6 +196,7 @@ const GestionRoles = () => {
 
   const handleDeleteRole = (rol) => {
     setDeleteRole(rol);
+    setDeleteError(null);
     setIsDeleteOpen(true);
   };
 
@@ -231,30 +209,32 @@ const GestionRoles = () => {
       const response = await fetch(
         `http://localhost:8080/api/roles/${deleteRole.id}`,
         {
-          method: "PUT",
+          method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ idEstado: 2 }),
         },
       );
       if (response.ok) {
+        // Actualización optimista: lo quitamos de la lista local
         setRoles((prev) =>
-          prev.map((r) =>
-            r.id === deleteRole.id
-              ? { ...r, idEstado: 2, estado: "inactivo" }
-              : r,
-          ),
+          prev.filter((r) => String(r.id) !== String(deleteRole.id)),
         );
+        // Sincronización real: refrescamos desde el servidor
+        await refresh();
+
         setIsDeleteOpen(false);
         showSuccessToast(
-          "Rol inactivado",
-          `El rol "${deleteRole.nombre}" se inactivó correctamente.`,
+          "Rol eliminado",
+          `El rol "${deleteRole.nombre}" ha sido eliminado permanentemente.`,
         );
+      } else {
+        const errorData = await response.json();
+        setDeleteError(errorData.message || "No se puede eliminar este rol debido a dependencias con usuarios o permisos.");
       }
     } catch (error) {
-      console.error("Error al desactivar rol:", error);
+      console.error("Error en la petición de eliminación:", error);
     } finally {
       setIsLoadingDelete(false);
     }
@@ -295,10 +275,11 @@ const GestionRoles = () => {
           loading={
             loading || isLoadingDetails || isLoadingEdit || isLoadingDelete
           }
+          authFetch={authFetch}
           onView={handleViewDetails}
           onEdit={handleEditRole}
           onDelete={handleDeleteRole}
-          onToggleStatus={handleToggleStatus}
+          onToggleStatus={handleStatusChangeSuccess}
           onRefresh={refresh}
         />
 
@@ -325,6 +306,7 @@ const GestionRoles = () => {
         rol={deleteRole}
         onConfirm={onDeleteConfirm}
         loading={isLoadingDelete}
+        error={deleteError}
       />
 
       <RolEditModal

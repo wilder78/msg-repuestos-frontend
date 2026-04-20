@@ -62,7 +62,7 @@ const EmployeeDetailsModal = ({ isOpen, onClose, empleado, getCargoStyle }) => {
           <DialogHeader className="p-6 pb-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
                   <User className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -79,7 +79,7 @@ const EmployeeDetailsModal = ({ isOpen, onClose, empleado, getCargoStyle }) => {
         </div>
 
         {/* Contenido del Modal */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+        <div className="p-6 space-y-6">
           {/* Sección de Perfil Principal */}
           <div className="bg-gradient-to-br from-slate-50 to-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-5">

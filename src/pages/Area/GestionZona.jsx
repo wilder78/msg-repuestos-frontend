@@ -9,13 +9,25 @@ import AreaCreateModal from "./components/AreaCreateModal";
 import AreaEditModal from "./components/AreaEditModal";
 import AreaDeleteModal from "./components/AreaDeleteModal";
 import AreaDetailsModal from "./components/AreaDetailsModal";
-import api from "../../api/axios";
+
+
+const authFetch = (url, options = {}) => {
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+};
 
 const normalizeZone = (zone) => ({
-  id: zone.idZona?.toString() || "",
-  name: zone.nombreZona || "",
+  id: zone.idZona?.toString() || zone.id_zona?.toString() || "",
+  name: zone.nombreZona || zone.nombre_zona || "",
   description: zone.descripcion || "",
-  statusId: zone.activo,
+  statusId: zone.idEstado || zone.id_estado,
 });
 
 export default function GestionZona() {
@@ -25,18 +37,76 @@ export default function GestionZona() {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [createToast, setCreateToast] = useState({ visible: false, zoneName: "" });
-  const [editToast, setEditToast] = useState({ visible: false, zoneName: "" });
-  const [deleteToast, setDeleteToast] = useState({ visible: false, zoneName: "" });
+  const [toastConfig, setToastConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
+
+  const showSuccessToast = (title, message) => {
+    setToastConfig({
+      visible: true,
+      title,
+      message,
+    });
+    setTimeout(() => {
+      setToastConfig((prev) => ({ ...prev, visible: false }));
+    }, 4500);
+  };
+
+  const handleZoneCreated = (name) => {
+    showSuccessToast("Zona registrada", `La zona "${name}" ha sido creada correctamente.`);
+  };
+
+  const handleZoneUpdated = (name) => {
+    showSuccessToast("Zona actualizada", `La zona "${name}" ha sido actualizada correctamente.`);
+  };
+
+  const handleZoneDeleted = (name) => {
+    showSuccessToast("Zona eliminada", `La zona "${name}" ha sido eliminada permanentemente.`);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteZone) return;
+
+    try {
+      setIsSaving(true);
+      setPageError(null);
+      
+      const res = await authFetch(`http://localhost:8080/api/zonas/${deleteZone.id}`, {
+        method: "DELETE"
+      });
+
+      if (res.ok) {
+        setZones((prev) =>
+          prev.filter((zone) => zone.id.toString() !== deleteZone.id.toString())
+        );
+        setIsDeleteOpen(false);
+        handleZoneDeleted(deleteZone.name);
+        setDeleteZone(null);
+      } else {
+        const errorData = await res.json();
+        setDeleteError(errorData.message || "No se puede eliminar este registro debido a que tiene datos asociados en otros módulos. Considere inactivarlo en su lugar.");
+      }
+    } catch (err) {
+      console.error("Error inactivando zona:", err);
+      setDeleteError("Error de comunicación con el servidor.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const [editZone, setEditZone] = useState(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     nombreZona: "",
     descripcion: "",
+    idEstado: 1,
   });
   const [selectedZone, setSelectedZone] = useState(null);
   const [deleteZone, setDeleteZone] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
@@ -44,15 +114,15 @@ export default function GestionZona() {
       try {
         setLoading(true);
         setPageError(null);
-        const response = await api.get("/zonas");
-        const normalized = Array.isArray(response.data)
-          ? response.data.map(normalizeZone)
+        const response = await authFetch("http://localhost:8080/api/zonas");
+        if (!response.ok) throw new Error("Error al obtener zonas");
+        const data = await response.json();
+        const normalized = Array.isArray(data)
+          ? data.map(normalizeZone)
           : [];
         setZones(normalized);
       } catch (err) {
-        const message =
-          err.response?.data?.message || err.response?.statusText || err.message;
-        setPageError(`No se pudo cargar la lista de zonas. ${message}`);
+        setPageError(`No se pudo cargar la lista de zonas.`);
         console.error("Error al cargar zonas:", err);
       } finally {
         setLoading(false);
@@ -67,7 +137,7 @@ export default function GestionZona() {
       zones.filter((zone) => {
         const term = searchTerm.toLowerCase();
         return (
-          zone.id.toLowerCase().includes(term) ||
+          zone.id.toString().toLowerCase().includes(term) ||
           zone.name.toLowerCase().includes(term) ||
           zone.description.toLowerCase().includes(term)
         );
@@ -79,80 +149,23 @@ export default function GestionZona() {
     try {
       setIsSaving(true);
       setPageError(null);
-      console.debug("Creando zona", newArea);
-      const response = await api.post("/zonas", newArea);
-      console.debug("Respuesta de creación de zona", response.data);
-      const createdZone = response.data?.data || response.data;
-      if (!createdZone) {
-        throw new Error("La respuesta del servidor no incluye la zona creada.");
+      const response = await authFetch("http://localhost:8080/api/zonas", {
+        method: "POST",
+        body: JSON.stringify(newArea)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const createdZone = data.data || data;
+        const normalized = normalizeZone(createdZone);
+        setZones((prev) => [normalized, ...prev]);
+        return true;
       }
-      const normalized = normalizeZone(createdZone);
-      setZones((prev) => [normalized, ...prev]);
-      return true;
+      const errorData = await response.json();
+      return errorData.message || "No se pudo crear la zona.";
     } catch (err) {
-      const message =
-        err.response?.data?.error || err.response?.data?.message || err.response?.statusText || err.message;
-      const fullMessage = message
-        ? message.startsWith("No se pudo crear la zona")
-          ? message
-          : `No se pudo crear la zona. ${message}`
-        : "No se pudo crear la zona.";
-      console.error("Error creando zona:", err.response?.data || err);
-      return fullMessage;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleZoneCreated = (name) => {
-    setCreateToast({ visible: true, zoneName: name });
-    setTimeout(() => {
-      setCreateToast((prev) => ({ ...prev, visible: false }));
-    }, 4500);
-  };
-
-  const handleZoneUpdated = (name) => {
-    setEditToast({ visible: true, zoneName: name });
-    setTimeout(() => {
-      setEditToast((prev) => ({ ...prev, visible: false }));
-    }, 4500);
-  };
-
-  const handleZoneDeleted = (name) => {
-    setDeleteToast({ visible: true, zoneName: name });
-    setTimeout(() => {
-      setDeleteToast((prev) => ({ ...prev, visible: false }));
-    }, 4500);
-  };
-
-  const handleDeleteZone = (zone) => {
-    setDeleteZone(zone);
-    setIsDeleteOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteZone) return;
-
-    try {
-      setIsSaving(true);
-      setPageError(null);
-      await api.delete(`/zonas/${deleteZone.id}`);
-      setZones((prev) =>
-        prev.map((zone) =>
-          zone.id === deleteZone.id ? { ...zone, statusId: 0 } : zone,
-        ),
-      );
-      setIsDeleteOpen(false);
-      handleZoneDeleted(deleteZone.name);
-      setDeleteZone(null);
-    } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.response?.statusText ||
-        err.message;
-      setPageError(`No se pudo inactivar la zona. ${message}`);
-      console.error("Error inactivando zona:", err.response?.data || err);
+      console.error("Error creando zona:", err);
+      return "No se pudo crear la zona.";
     } finally {
       setIsSaving(false);
     }
@@ -163,6 +176,7 @@ export default function GestionZona() {
     setEditFormData({
       nombreZona: zone.name || "",
       descripcion: zone.description || "",
+      idEstado: zone.statusId,
     });
     setIsEditOpen(true);
   };
@@ -176,30 +190,28 @@ export default function GestionZona() {
       const payload = {
         nombre_zona: editFormData.nombreZona.trim(),
         descripcion: editFormData.descripcion.trim(),
-        activo: editZone.statusId,
+        id_estado: editFormData.idEstado,
       };
 
-      const response = await api.put(`/zonas/${editZone.id}`, payload);
-      const updatedZone = response.data?.data || response.data;
-      if (!updatedZone) {
-        throw new Error("La respuesta del servidor no incluye la zona actualizada.");
-      }
+      const response = await authFetch(`http://localhost:8080/api/zonas/${editZone.id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
 
-      const normalized = normalizeZone(updatedZone);
-      setZones((prev) =>
-        prev.map((zone) => (zone.id === normalized.id ? normalized : zone))
-      );
-      return true;
+      if (response.ok) {
+        const data = await response.json();
+        const updatedZone = data.data || data;
+        const normalized = normalizeZone(updatedZone);
+        setZones((prev) =>
+          prev.map((zone) => (zone.id === normalized.id ? normalized : zone))
+        );
+        return true;
+      }
+      const errorData = await response.json();
+      return errorData.message || "No se pudo actualizar la zona.";
     } catch (err) {
-      const message =
-        err.response?.data?.error || err.response?.data?.message || err.response?.statusText || err.message;
-      const fullMessage = message
-        ? message.startsWith("No se pudo")
-          ? message
-          : `No se pudo actualizar la zona. ${message}`
-        : "No se pudo actualizar la zona.";
-      console.error("Error actualizando zona:", err.response?.data || err);
-      return fullMessage;
+      console.error("Error actualizando zona:", err);
+      return "No se pudo actualizar la zona.";
     } finally {
       setIsSaving(false);
     }
@@ -210,35 +222,29 @@ export default function GestionZona() {
     setIsDetailsOpen(true);
   };
 
-  const handleToggleStatus = (zoneId) => {
+  const handleDeleteZone = (zone) => {
+    setDeleteZone(zone);
+    setDeleteError(null);
+    setIsDeleteOpen(true);
+  };
+
+  const handleStatusChangeSuccess = (zoneId, nextStatus) => {
     setZones((prev) =>
-      prev.map((zone) =>
-        zone.id === zoneId
-          ? { ...zone, statusId: zone.statusId === 1 ? 0 : 1 }
-          : zone
-      )
+      prev.map((z) => (z.id.toString() === zoneId.toString() ? { ...z, statusId: nextStatus } : z))
+    );
+    showSuccessToast(
+      "Estado actualizado",
+      `La zona ahora está ${nextStatus === 1 ? "Activa" : "Inactiva"}.`
     );
   };
 
   return (
     <div className="min-h-screen bg-slate-50 p-8 space-y-8">
       <SuccessToast
-        visible={createToast.visible}
-        title="Zona registrada"
-        message={`La zona "${createToast.zoneName}" ha sido creada correctamente.`}
-        onClose={() => setCreateToast((prev) => ({ ...prev, visible: false }))}
-      />
-      <SuccessToast
-        visible={editToast.visible}
-        title="Zona actualizada"
-        message={`La zona "${editToast.zoneName}" ha sido actualizada correctamente.`}
-        onClose={() => setEditToast((prev) => ({ ...prev, visible: false }))}
-      />
-      <SuccessToast
-        visible={deleteToast.visible}
-        title="Zona inactivada"
-        message={`La zona "${deleteToast.zoneName}" ha sido inactivada correctamente.`}
-        onClose={() => setDeleteToast((prev) => ({ ...prev, visible: false }))}
+        visible={toastConfig.visible}
+        title={toastConfig.title}
+        message={toastConfig.message}
+        onClose={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
       />
       <PageHeader
         icon={MapPin}
@@ -277,10 +283,11 @@ export default function GestionZona() {
             <AreaTable
               zones={filteredZones}
               loading={loading}
+              authFetch={authFetch}
               onView={handleViewZone}
               onEdit={handleEditZone}
               onDelete={handleDeleteZone}
-              onToggleStatus={(zone) => handleToggleStatus(zone.id)}
+              onToggleStatus={handleStatusChangeSuccess}
             />
           )}
         </div>
@@ -319,10 +326,12 @@ export default function GestionZona() {
         onClose={() => {
           setIsDeleteOpen(false);
           setDeleteZone(null);
+          setDeleteError(null);
         }}
         zone={deleteZone}
         onConfirm={handleDeleteConfirm}
         loading={isSaving}
+        error={deleteError}
       />
 
       <AreaDetailsModal

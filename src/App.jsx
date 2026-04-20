@@ -5,10 +5,12 @@ import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 import DashboardContent from "./pages/Dashboard/DashboardContent";
 import GestionUsuarios from "./pages/Users/GestionUsuarios";
 import GestionZona from "./pages/Area/GestionZona";
-// Importamos el nuevo componente de Roles
 import GestionRoles from "./pages/Roles/GestionRoles";
-// Importamos el componente de Empleados
 import GestionEmpleados from "./pages/Employees/GestionEmpleados";
+import GestionClientes from "./pages/Customers/GestionClientes";
+import GestionPermisos from "./pages/Permits/GestionPermisos";
+import GestionProveedor from "./pages/Suppliers/GestionProveedor";
+import GestionCategorias from "./pages/Category/GestionCategorias";
 
 export default function App() {
   return (
@@ -46,14 +48,27 @@ export default function App() {
           </DashboardLayout>
         }
       />
-      <Route path="/zonas" element={<Navigate to="/dashboard/zonas" replace />} />
+      <Route
+        path="/zonas"
+        element={<Navigate to="/dashboard/zonas" replace />}
+      />
 
-      {/* Gestión de Roles y Permisos */}
+      {/* Gestión de Roles */}
       <Route
         path="/dashboard/roles"
         element={
           <DashboardLayout>
             <GestionRoles />
+          </DashboardLayout>
+        }
+      />
+
+      {/* ✅ Nueva Ruta: Gestión de Permisos */}
+      <Route
+        path="/dashboard/permisos"
+        element={
+          <DashboardLayout>
+            <GestionPermisos />
           </DashboardLayout>
         }
       />
@@ -66,6 +81,44 @@ export default function App() {
             <GestionEmpleados />
           </DashboardLayout>
         }
+      />
+
+      {/* Gestión de Clientes */}
+      <Route
+        path="/dashboard/customers"
+        element={
+          <DashboardLayout>
+            <GestionClientes />
+          </DashboardLayout>
+        }
+      />
+
+      {/* Gestión de Proveedores */}
+      <Route
+        path="/dashboard/suppliers"
+        element={
+          <DashboardLayout>
+            <GestionProveedor />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/proveedores"
+        element={<Navigate to="/dashboard/suppliers" replace />}
+      />
+
+      {/* Gestión de Categorías */}
+      <Route
+        path="/dashboard/categorias"
+        element={
+          <DashboardLayout>
+            <GestionCategorias />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/categorias"
+        element={<Navigate to="/dashboard/categorias" replace />}
       />
 
       {/* ─── Manejo de Error 404 ─────────────────────────────────────── */}

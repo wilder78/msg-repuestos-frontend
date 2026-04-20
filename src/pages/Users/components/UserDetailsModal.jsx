@@ -5,9 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "../../../components/ui/dialog";
-import { Button } from "../../../components/ui/button";
 import { Avatar, AvatarFallback } from "../../../components/ui/avatar";
 import { Separator } from "../../../components/ui/separator";
 import {
@@ -52,7 +50,7 @@ const UserDetailsModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-[580px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl"
+        className="sm:max-w-[650px] p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl"
         style={{
           backgroundColor: "white",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -63,7 +61,7 @@ const UserDetailsModal = ({
           <DialogHeader className="p-6 pb-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
                   <User className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -80,7 +78,7 @@ const UserDetailsModal = ({
         </div>
 
         {usuario && (
-          <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+          <div className="p-6 space-y-6">
             {/* Sección de Perfil Principal */}
             <div className="bg-gradient-to-br from-slate-50 to-white p-5 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between">
@@ -153,9 +151,8 @@ const UserDetailsModal = ({
                 </div>
                 <Separator className="my-2" />
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">ID de Sistema</p>
                   <p className="text-sm font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md inline-block">
-                    #{usuario.idUsuario.toString().padStart(4, "0")}
+                    #{usuario.idUsuario?.toString().padStart(4, "0") || "0000"}
                   </p>
                 </div>
               </InfoCard>
@@ -249,16 +246,6 @@ const UserDetailsModal = ({
             </div>
           </div>
         )}
-
-        <DialogFooter className="p-6 bg-slate-50/80 border-t border-slate-200 gap-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="border-slate-300 text-slate-700 hover:bg-white"
-          >
-            Cerrar ventana
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

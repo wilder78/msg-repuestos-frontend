@@ -18,6 +18,7 @@ import {
   ChevronUp,
   Palette,
   X,
+  Edit2, // ✅ NUEVA IMPORTACIÓN
 } from "lucide-react";
 
 const getAuthToken = () =>
@@ -204,9 +205,10 @@ const RolEditModal = ({
 
     try {
       const updatedRole = {
+        idRol: rol?.id,
         nombreRol: nombre.trim(),
         descripcion: descripcion.trim(),
-        idEstado: rol?.idEstado || 1,
+        idEstado: parseInt(rol?.idEstado || 1, 10),
       };
 
       const response = await authFetch(
@@ -234,9 +236,12 @@ const RolEditModal = ({
       if (idsToRemove.length > 0) {
         await Promise.all(
           idsToRemove.map((permId) =>
-            authFetch("http://localhost:8080/api/role-permissions/", {
+            authFetch(`http://localhost:8080/api/role-permissions/revoke`, {
               method: "DELETE",
-              body: JSON.stringify({ idRol: rol?.id, idPermiso: permId }),
+              body: JSON.stringify({ 
+                idRol: Number(rol?.id || rol?.idRol), 
+                idPermiso: Number(permId) 
+              }),
             }),
           ),
         );
@@ -268,134 +273,162 @@ const RolEditModal = ({
   const groupedPermissions = groupPermissionsByModule(permissionsList);
   const totalSelected = selectedPermIds.length;
 
+  // ✅ NUEVO: Lógica para detectar si hay cambios reales
+  const hasChanges = () => {
+    const initialNombre = rol?.nombre || "";
+    const initialDesc = rol?.descripcion || "";
+    const initialPermIds = (assignedPermissions || [])
+      .map((p) => p.idPermiso || p.id_permiso || p.id)
+      .filter(Boolean)
+      .sort();
+    
+    const currentPermIds = [...selectedPermIds].sort();
+
+    const permsChanged = JSON.stringify(initialPermIds) !== JSON.stringify(currentPermIds);
+    const nombreChanged = nombre.trim() !== initialNombre;
+    const descChanged = descripcion.trim() !== initialDesc;
+
+    return permsChanged || nombreChanged || descChanged;
+  };
+
   if (!rol) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="sm:max-w-[700px] p-0 overflow-hidden border border-gray-200 shadow-xl rounded-2xl"
-        style={{ backgroundColor: "#ffffff" }}
+      <DialogContent 
+        className="sm:max-w-[650px] p-0 overflow-hidden rounded-2xl gap-0 border-0 shadow-2xl"
+        style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
       >
-        <div className="bg-white border-b border-gray-100 px-6 pt-6 pb-4">
+        {/* ── Header Estilo Premium ── */}
+        <div className="bg-white border-b border-gray-100 px-7 pt-6 pb-4">
           <DialogHeader>
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                <ShieldCheck className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500 rounded-xl">
+                <Edit2 className="h-5 w-5 text-white" />
               </div>
               <div>
-                <DialogTitle className="text-2xl font-bold text-slate-900">
+                <DialogTitle className="text-xl font-bold text-gray-900">
                   Editar Rol
                 </DialogTitle>
                 <DialogDescription className="text-gray-400 text-sm mt-0.5">
-                  Modifica el nombre, la descripción y los permisos del rol.
+                  Modifica la información y permisos del rol seleccionado
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
         </div>
 
-        <div className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto bg-white">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-start">
+        {/* ── Scrollable Content ── */}
+        <div className="px-7 py-6 space-y-6 max-h-[65vh] overflow-y-auto bg-white scrollbar-thin scrollbar-thumb-slate-200">
+          
+          {/* Nombre y Estado */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-slate-700">
+              <label className="text-xs font-semibold text-slate-700">
                 Nombre del Rol <span className="text-emerald-500">*</span>
               </label>
               <Input
-                placeholder="Ej: Supervisor"
+                placeholder="Ej: Supervisor de Ventas"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                className={`border-slate-200 focus:border-emerald-400 ${errors.nombre ? "border-red-400" : ""}`}
+                className={`h-[42px] rounded-xl border-slate-200 focus-visible:ring-emerald-500 ${errors.nombre ? "border-red-400" : ""}`}
               />
               {errors.nombre && (
-                <p className="text-xs text-red-500">{errors.nombre}</p>
+                <p className="text-[11px] text-red-500">{errors.nombre}</p>
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
-                <Palette className="h-3.5 w-3.5" /> Estado actual
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <Palette className="h-3 w-3 text-slate-400" /> Estado Actual
               </label>
-              <div className="text-sm text-slate-500">
+              <div className="px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 text-xs font-bold text-slate-500 uppercase tracking-tight text-center">
                 {rol.estado || "Activo"}
               </div>
             </div>
           </div>
 
+          {/* Descripción */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-slate-700">
-              Descripción
+            <label className="text-xs font-semibold text-slate-700">
+              Descripción del Rol
             </label>
             <Textarea
-              placeholder="Descripción del rol..."
+              placeholder="Describe las responsabilidades generales de este rol..."
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="resize-none h-20"
+              className="resize-none h-24 rounded-xl border-slate-200 focus-visible:ring-emerald-500 text-sm"
             />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b pb-2">
-              <label className="text-sm font-semibold text-slate-700">
-                Permisos
+          {/* Sección de Permisos */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Configuración de Permisos
               </label>
-              <span className="text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200">
-                {totalSelected} seleccionados
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shadow-sm">
+                {totalSelected} PERMISOS SELECCIONADOS
               </span>
             </div>
 
-            {loadingPerms ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="animate-spin text-emerald-500" />
-              </div>
-            ) : (
-              Object.entries(groupedPermissions).map(([module, perms]) => (
-                <PermissionGroup
-                  key={module}
-                  moduleName={module}
-                  permissions={perms}
-                  selectedIds={selectedPermIds}
-                  onToggle={handleTogglePerm}
-                />
-              ))
-            )}
+            <div className="grid grid-cols-1 gap-1">
+              {loadingPerms ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-500 opacity-50" />
+                  <p className="text-xs text-slate-400 font-medium">Cargando catálogo de permisos...</p>
+                </div>
+              ) : (
+                Object.entries(groupedPermissions).map(([module, perms]) => (
+                  <PermissionGroup
+                    key={module}
+                    moduleName={module}
+                    permissions={perms}
+                    selectedIds={selectedPermIds}
+                    onToggle={handleTogglePerm}
+                  />
+                ))
+              )}
+            </div>
           </div>
 
           {errors.submit && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
+            <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-[11px] rounded-xl text-center">
               {errors.submit}
             </div>
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+        <div className="mx-7 h-px bg-slate-100 mb-6" />
+
+        {/* ── Footer ── */}
+        <DialogFooter className="px-7 pb-6 flex gap-3 sm:gap-3">
+          <Button
+            onClick={handleSubmit}
+            disabled={isSaving || saveSuccess || !nombre.trim() || !hasChanges()}
+            className={`flex-1 h-[46px] rounded-xl font-semibold transition-all duration-300 ${
+              saveSuccess
+                ? "bg-emerald-500 shadow-none text-white border-0"
+                : (!nombre.trim() || !hasChanges())
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed border-0"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_4px_14px_rgba(16,185,129,0.3)] border-0"
+            }`}
+          >
+            {saveSuccess ? (
+              <><CheckCircle2 className="mr-2 h-4 w-4" /> Cambios Guardados</>
+            ) : isSaving ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Actualizando...</>
+            ) : (
+              "Guardar Cambios"
+            )}
+          </Button>
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSaving || saveSuccess}
-            className="flex-1 border-gray-300 text-gray-600 bg-white hover:bg-gray-50"
+            className="flex-1 h-[46px] rounded-xl border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors"
           >
             Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSaving || saveSuccess || !nombre.trim()}
-            className={`flex-1 font-semibold shadow-sm transition-all duration-300 ${
-              saveSuccess
-                ? "bg-emerald-600"
-                : "bg-emerald-500 hover:bg-emerald-600"
-            } text-white`}
-          >
-            {saveSuccess ? (
-              <>
-                <CheckCircle2 className="h-4 w-4 mr-2" /> Guardado
-              </>
-            ) : isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Guardando...
-              </>
-            ) : (
-              "Guardar cambios"
-            )}
           </Button>
         </DialogFooter>
       </DialogContent>

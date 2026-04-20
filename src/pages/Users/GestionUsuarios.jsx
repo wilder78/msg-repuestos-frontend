@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users } from "lucide-react";
+import { UserPlus } from "lucide-react";
 
 import { useUsers } from "../../hooks/useUsers";
 import PageHeader from "../../components/shared/PageHeader";
@@ -13,12 +13,13 @@ import UserDeleteModal from "./components/UserDeleteModal";
 import UserTable from "./components/UserTable";
 import SuccessToast from "../../components/ui/SuccessToast";
 
+
 const INITIAL_CREATE_STATE = {
   nombreUsuario: "",
   email: "",
   password: "",
   id_rol: "",
-  idEstado: "1",
+  id_estado: "1",
 };
 
 const GestionUsuarios = () => {
@@ -39,6 +40,7 @@ const GestionUsuarios = () => {
   const [createFormData, setCreateFormData] = useState(INITIAL_CREATE_STATE);
   const [editFormData, setEditFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const [toastConfig, setToastConfig] = useState({
     visible: false,
@@ -53,23 +55,28 @@ const GestionUsuarios = () => {
     }, 4500);
   };
 
+  // ─── Handlers de Éxito ────────────────────────────────────────────────────
+
   const handleUserSaveSuccess = (name) => {
-    showToast(
-      "Usuario actualizado",
-      `Los cambios de "${name}" se aplicaron correctamente.`,
-    );
+    showToast("Usuario actualizado", `Los cambios de "${name}" se aplicaron correctamente.`);
   };
 
   const handleUserCreateSuccess = (name) => {
+    showToast("Usuario registrado", `El usuario "${name}" ha sido creado correctamente.`);
+  };
+
+  // ✅ Handler para el cambio de estado (Éxito desde componente global)
+  const handleStatusChangeSuccess = (userId, nextStatus) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.idUsuario === userId ? { ...u, id_estado: nextStatus, idEstado: nextStatus } : u))
+    );
     showToast(
-      "Usuario registrado",
-      `El usuario "${name}" ha sido creado correctamente.`,
+      nextStatus === 1 ? "Usuario activado" : "Usuario inactivado",
+      "El estado se actualizó correctamente."
     );
   };
 
   // ─── Control de Modales ───────────────────────────────────────────────────
-
-  const handleCreateUser = () => toggleModal("create", true);
 
   const toggleModal = (type, isOpen, user = null) => {
     setSelectedUser(user);
@@ -78,12 +85,12 @@ const GestionUsuarios = () => {
         nombreUsuario: user.nombreUsuario || "",
         email: user.email || "",
         id_rol: user.id_rol?.toString() || "",
-        idEstado: user.idEstado?.toString() || "1",
+        id_estado: (user.idEstado || user.id_estado)?.toString() || "1",
       });
     }
-    if (!isOpen && type === "create") {
-      setCreateFormData(INITIAL_CREATE_STATE);
-    }
+    if (!isOpen && type === "create") setCreateFormData(INITIAL_CREATE_STATE);
+    if (type === "delete") setDeleteError(null);
+    
     setModals((prev) => ({ ...prev, [type]: isOpen }));
   };
 
@@ -91,17 +98,14 @@ const GestionUsuarios = () => {
 
   const onCreateSubmit = async () => {
     if (!createFormData.id_rol) return false;
-
     setActionLoading(true);
     try {
       const res = await authFetch("http://localhost:8080/api/users/register", {
         method: "POST",
         body: JSON.stringify({
-          nombreUsuario: createFormData.nombreUsuario,
-          email: createFormData.email,
-          password: createFormData.password,
-          idRol: parseInt(createFormData.id_rol, 10),
-          idEstado: parseInt(createFormData.idEstado, 10),
+          ...createFormData,
+          id_rol: parseInt(createFormData.id_rol, 10),
+          idEstado: parseInt(createFormData.id_estado, 10),
         }),
       });
 
@@ -111,7 +115,6 @@ const GestionUsuarios = () => {
         toggleModal("create", false);
         return true;
       }
-
       return false;
     } catch (error) {
       console.error("Error al crear usuario:", error);
@@ -124,38 +127,32 @@ const GestionUsuarios = () => {
   const onEditSubmit = async () => {
     if (!editFormData.id_rol) return false;
 
+    // ✅ Validación: Evitar que el usuario Master sea inactivado desde el modal de edición
+    if (selectedUser.idUsuario === 1 && parseInt(editFormData.id_estado, 10) !== 1) {
+      showToast("Acción no permitida", "No se puede cambiar el estado del usuario Master.");
+      return false;
+    }
+
     setActionLoading(true);
     try {
-      const res = await authFetch(
-        `http://localhost:8080/api/users/${selectedUser.idUsuario}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            nombreUsuario: editFormData.nombreUsuario,
-            email: editFormData.email,
-            idRol: parseInt(editFormData.id_rol, 10),
-            idEstado: parseInt(editFormData.idEstado, 10),
-          }),
-        },
-      );
+      const res = await authFetch(`http://localhost:8080/api/users/${selectedUser.idUsuario}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          nombreUsuario: editFormData.nombreUsuario,
+          email: editFormData.email,
+          id_rol: parseInt(editFormData.id_rol, 10),
+          idEstado: parseInt(editFormData.id_estado, 10),
+        }),
+      });
 
       if (res.ok) {
         setUsers((prev) =>
           prev.map((u) =>
-            u.idUsuario === selectedUser.idUsuario
-              ? {
-                  ...u,
-                  nombreUsuario: editFormData.nombreUsuario,
-                  email: editFormData.email,
-                  id_rol: parseInt(editFormData.id_rol, 10),
-                  idEstado: parseInt(editFormData.idEstado, 10),
-                }
-              : u,
-          ),
+            u.idUsuario === selectedUser.idUsuario ? { ...u, ...editFormData, id_rol: parseInt(editFormData.id_rol, 10) } : u
+          )
         );
         return true;
       }
-
       return false;
     } catch (error) {
       console.error("Error al editar usuario:", error);
@@ -165,54 +162,19 @@ const GestionUsuarios = () => {
     }
   };
 
-  const handleToggleStatus = async (user) => {
-    const nextStatus = user.idEstado === 1 ? 2 : 1;
-    try {
-      const res = await authFetch(
-        `http://localhost:8080/api/users/${user.idUsuario}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({ idEstado: nextStatus }),
-        },
-      );
-      if (res.ok) {
-        const userName = user.nombreUsuario || "Usuario";
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.idUsuario === user.idUsuario ? { ...u, idEstado: nextStatus } : u,
-          ),
-        );
-        showToast(
-          nextStatus === 1 ? "Usuario activado" : "Usuario inactivado",
-          `El usuario "${userName}" se ${
-            nextStatus === 1 ? "activó" : "inactivó"
-          } correctamente.`,
-        );
-      }
-    } catch (err) {
-      console.error("Error al cambiar estado:", err);
-    }
-  };
-
   const onDeleteConfirm = async () => {
     setActionLoading(true);
     try {
-      const res = await authFetch(
-        `http://localhost:8080/api/users/${selectedUser.idUsuario}`,
-        { method: "DELETE" },
-      );
+      const res = await authFetch(`http://localhost:8080/api/users/${selectedUser.idUsuario}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.idUsuario === selectedUser.idUsuario ? { ...u, idEstado: 2 } : u,
-          ),
-        );
-        const deletedName = `${selectedUser.nombreUsuario}`;
+        // En lugar de borrar, el backend suele inactivar (estado 2)
+        handleStatusChangeSuccess(selectedUser.idUsuario, 2);
         toggleModal("delete", false);
-        showToast(
-          "Usuario inactivado",
-          `El usuario "${deletedName}" se inactivó correctamente.`,
-        );
+      } else {
+        const errorData = await res.json();
+        setDeleteError(errorData.message || "Error de restricciones de seguridad.");
       }
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
@@ -221,87 +183,64 @@ const GestionUsuarios = () => {
     }
   };
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
+  // ─── Helpers Visuales ─────────────────────────────────────────────────────
 
-  const getInitials = (n) =>
-    n
-      ?.split(" ")
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "??";
+  const getInitials = (n) => n?.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) || "??";
 
   const getAvatarColor = (id) => {
-    const colors = [
-      "bg-emerald-500",
-      "bg-blue-500",
-      "bg-violet-500",
-      "bg-amber-500",
-      "bg-rose-500",
-    ];
+    const colors = ["bg-emerald-500", "bg-blue-500", "bg-violet-500", "bg-amber-500", "bg-rose-500"];
     return colors[id % colors.length];
   };
+
+  // ─── Filtrado y Paginación ────────────────────────────────────────────────
 
   const filteredUsers = users.filter(
     (u) =>
       u.nombreUsuario?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage,
-  );
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage);
 
   return (
-    <div className="flex flex-col h-screen bg-[#f8f9fa] w-full overflow-hidden">
-      <SuccessToast
-        visible={toastConfig.visible}
-        title={toastConfig.title}
-        message={toastConfig.message}
-        onClose={() => setToastConfig((prev) => ({ ...prev, visible: false }))}
-      />
+    <div className="p-8 space-y-6 bg-[#f8f9fa] min-h-screen overflow-auto">
+      <SuccessToast {...toastConfig} onClose={() => setToastConfig((p) => ({ ...p, visible: false }))} />
 
       <PageHeader
-        icon={Users}
+        icon={UserPlus}
         title="Gestión de Usuarios"
         subtitle="Panel administrativo MSG Repuestos"
         buttonText="Crear Usuario"
-        onButtonClick={handleCreateUser}
+        onButtonClick={() => toggleModal("create", true)}
       />
 
-      <div className="flex-1 p-8 overflow-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
-          <TableToolbar
-            title="Usuarios del Sistema"
-            count={filteredUsers.length}
-            searchTerm={searchTerm}
-            onSearchChange={(val) => {
-              setSearchTerm(val);
-              setCurrentPage(1);
-            }}
-            placeholder="Buscar por nombre o email..."
-          />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+        <TableToolbar
+          title="Usuarios del Sistema"
+          count={filteredUsers.length}
+          searchTerm={searchTerm}
+          onSearchChange={(val) => { setSearchTerm(val); setCurrentPage(1); }}
+          placeholder="Buscar por nombre o email..."
+        />
 
-          <UserTable
-            users={paginatedUsers}
-            roleMap={roleMap}
-            loading={loading}
-            getAvatarColor={getAvatarColor}
-            getInitials={getInitials}
-            onView={(u) => toggleModal("view", true, u)}
-            onEdit={(u) => toggleModal("edit", true, u)}
-            onDelete={(u) => toggleModal("delete", true, u)}
-            onToggleStatus={handleToggleStatus}
-          />
+        <UserTable
+          users={paginatedUsers}
+          roleMap={roleMap}
+          loading={loading}
+          authFetch={authFetch}
+          getAvatarColor={getAvatarColor}
+          getInitials={getInitials}
+          onView={(u) => toggleModal("view", true, u)}
+          onEdit={(u) => toggleModal("edit", true, u)}
+          onDelete={(u) => toggleModal("delete", true, u)}
+          onToggleStatus={handleStatusChangeSuccess}
+        />
 
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page) => setCurrentPage(page)}
-          />
-        </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredUsers.length / usersPerPage)}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* MODALES */}
@@ -310,18 +249,11 @@ const GestionUsuarios = () => {
         onClose={() => toggleModal("create", false)}
         formData={createFormData}
         listaRoles={roles}
-        onInputChange={(e) =>
-          setCreateFormData((prev) => ({
-            ...prev,
-            [e.target.name]: e.target.value,
-          }))
-        }
-        onSelectChange={(name, value) =>
-          setCreateFormData((prev) => ({ ...prev, [name]: value }))
-        }
+        onInputChange={(e) => setCreateFormData(p => ({ ...p, [e.target.name]: e.target.value }))}
+        onSelectChange={(name, value) => setCreateFormData(p => ({ ...p, [name]: value }))}
         onSubmit={onCreateSubmit}
         loading={actionLoading}
-        onSaveSuccess={handleUserCreateSuccess} // ✅ NUEVA PROP
+        onSaveSuccess={handleUserCreateSuccess}
       />
 
       <UserEditModal
@@ -330,20 +262,13 @@ const GestionUsuarios = () => {
         usuario={selectedUser}
         formData={editFormData}
         listaRoles={roles}
-        onInputChange={(e) =>
-          setEditFormData((prev) => ({
-            ...prev,
-            [e.target.name]: e.target.value,
-          }))
-        }
-        onSelectChange={(name, value) =>
-          setEditFormData((prev) => ({ ...prev, [name]: value }))
-        }
+        onInputChange={(e) => setEditFormData(p => ({ ...p, [e.target.name]: e.target.value }))}
+        onSelectChange={(name, value) => setEditFormData(p => ({ ...p, [name]: value }))}
         onSubmit={onEditSubmit}
         loading={actionLoading}
         getInitials={getInitials}
         getAvatarColor={getAvatarColor}
-        onSaveSuccess={handleUserSaveSuccess} // ✅ NUEVA PROP
+        onSaveSuccess={handleUserSaveSuccess}
       />
 
       <UserDetailsModal
@@ -361,6 +286,7 @@ const GestionUsuarios = () => {
         usuario={selectedUser}
         onConfirm={onDeleteConfirm}
         loading={actionLoading}
+        error={deleteError}
       />
     </div>
   );
