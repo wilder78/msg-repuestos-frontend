@@ -11,6 +11,8 @@ import GestionClientes from "./pages/Customers/GestionClientes";
 import GestionPermisos from "./pages/Permits/GestionPermisos";
 import GestionProveedor from "./pages/Suppliers/GestionProveedor";
 import GestionCategorias from "./pages/Category/GestionCategorias";
+import GestionProductos from "./pages/Products/GestionProductos";
+
 
 export default function App() {
   return (
@@ -119,6 +121,19 @@ export default function App() {
       <Route
         path="/categorias"
         element={<Navigate to="/dashboard/categorias" replace />}
+      />
+      {/* Gestión de Productos */}
+      <Route
+        path="/dashboard/productos"
+        element={
+          <DashboardLayout>
+            <GestionProductos />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/productos"
+        element={<Navigate to="/dashboard/productos" replace />}
       />
 
       {/* ─── Manejo de Error 404 ─────────────────────────────────────── */}
