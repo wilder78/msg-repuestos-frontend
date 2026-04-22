@@ -223,17 +223,19 @@ const EmployeeEditModal = ({
       >
         {/* ── Header Estilo Premium ── */}
         <div className="bg-white border-b border-gray-100 px-7 pt-6 pb-4">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-500 rounded-xl">
+          <DialogHeader className="px-7 pt-6 pb-2">
+            <div className="flex items-center gap-4">
+              {/* Contenedor del ícono con color corporativo */}
+              <div className="p-2.5 bg-[#10b981] rounded-xl shadow-sm">
                 <Edit2 className="h-5 w-5 text-white" />
               </div>
-              <div>
-                <DialogTitle className="text-xl font-bold text-gray-900">
+              
+              <div className="flex flex-col gap-0.5">
+                <DialogTitle className="text-xl font-bold text-[#0f172a]">
                   Editar Datos del Empleado
                 </DialogTitle>
-                <DialogDescription className="text-gray-400 text-sm mt-0.5">
-                  Actualiza la información básica o vincula una cuenta de usuario diferente
+                <DialogDescription className="text-slate-500 text-sm leading-relaxed">
+                  Actualiza la información básica o vincula una cuenta de usuario diferente.
                 </DialogDescription>
               </div>
             </div>

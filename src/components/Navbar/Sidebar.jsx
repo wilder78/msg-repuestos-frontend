@@ -54,11 +54,11 @@ const navigation = [
   {
     title: "Inventario",
     items: [
-      { icon: Package, label: "Productos", href: "/productos" },
+      { icon: Package, label: "Productos", href: "/dashboard/productos" },
       {
         icon: ClipboardList,
         label: "Categoría Productos",
-        href: "/categorias",
+        href: "/dashboard/categorias",
       },
       { icon: Truck, label: "Proveedores", href: "/dashboard/suppliers" },
       { icon: ShoppingBag, label: "Compras", href: "/compras" },

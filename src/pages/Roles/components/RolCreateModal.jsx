@@ -376,12 +376,15 @@ const RolCreateModal = ({ isOpen, onClose, onRolCreated }) => {
             }`}
           >
             {saveSuccess ? (
-              <><CheckCircle2 className="mr-2 h-4 w-4" /> Rol Creado</>
+              <>
+                <CheckCircle2 className="mr-2 h-4 w-4" /> Rol Creado
+              </>
             ) : isSaving ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Registrando...</>
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Registrando...
+              </>
             ) : (
               "Crear Rol"
-            )}
             )}
           </Button>
           <Button
