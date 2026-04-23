@@ -55,75 +55,81 @@ const ProductsTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((p) => (
-            <TableRow
-              key={p.idProducto}
-              className="group hover:bg-slate-50/50 transition-colors border-b border-slate-100"
-            >
-              <TableCell className="pl-6">
-                <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 transition-colors group-hover:bg-white group-hover:shadow-sm">
-                  <Package className="h-5 w-5" />
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col">
-                  <span className="font-bold text-slate-700">
-                    {p.nombre}
-                  </span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">
-                    ID: {p.idProducto} | {p.referencia}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1.5">
-                  <Tag className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                    {p.categoria?.nombre_categoria || categoryMap[p.idCategoria] || "Sin categoría"}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1 text-sm font-semibold text-slate-600">
-                  <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                  {parseFloat(p.precioCompra).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Archive className={`h-3.5 w-3.5 ${p.stockBuenEstado <= 5 ? 'text-rose-500' : 'text-slate-400'}`} />
-                  <span className={`font-medium ${p.stockBuenEstado <= 5 ? 'text-rose-600' : 'text-slate-600'}`}>
-                    {p.stockBuenEstado} uds
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell className="text-center">
-                <StatusToggleButton
-                  id={p.idProducto}
-                  currentStatus={p.idEstado}
-                  apiUrl="http://localhost:8080/api/products"
-                  onSuccess={onToggleStatus}
-                  authFetch={authFetch}
-                  fieldName="idEstado"
-                />
-              </TableCell>
-              <TableCell className="text-right pr-6">
-                <ActionButtons
-                  item={p}
-                  onView={onView}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  disabledEdit={p.idEstado !== 1}
-                  disabledDelete={p.idEstado !== 1}
-                  labels={{
-                    view: "Ver producto",
-                    edit: "Editar producto",
-                    delete: "Eliminar producto",
-                  }}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
+          {products.map((p) => {
+            const precio = p.precioCompra ?? p.precio_compra ?? 0;
+            const stock = p.stockBuenEstado ?? p.stock_buen_estado ?? 0;
+            const estado = p.idEstado ?? p.id_estado ?? 1;
+
+            return (
+              <TableRow
+                key={p.idProducto || p.id_producto}
+                className="group hover:bg-slate-50/50 transition-colors border-b border-slate-100"
+              >
+                <TableCell className="pl-6">
+                  <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 transition-colors group-hover:bg-white group-hover:shadow-sm">
+                    <Package className="h-5 w-5" />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-700">
+                      {p.nombre}
+                    </span>
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                      ID: {p.idProducto || p.id_producto} | {p.referencia}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5 text-slate-400" />
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                      {p.categoria?.nombre_categoria || categoryMap[p.idCategoria || p.id_categoria] || "Sin categoría"}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 text-sm font-semibold text-slate-600">
+                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                    {parseFloat(precio).toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Archive className={`h-3.5 w-3.5 ${stock <= 5 ? 'text-rose-500' : 'text-slate-400'}`} />
+                    <span className={`font-medium ${stock <= 5 ? 'text-rose-600' : 'text-slate-600'}`}>
+                      {stock} uds
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  <StatusToggleButton
+                    id={p.idProducto || p.id_producto}
+                    currentStatus={estado}
+                    apiUrl="http://localhost:8080/api/products"
+                    onSuccess={onToggleStatus}
+                    authFetch={authFetch}
+                    fieldName={p.idEstado !== undefined ? "idEstado" : "id_estado"}
+                  />
+                </TableCell>
+                <TableCell className="text-right pr-6">
+                  <ActionButtons
+                    item={p}
+                    onView={onView}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    disabledEdit={estado !== 1}
+                    disabledDelete={estado !== 1}
+                    labels={{
+                      view: "Ver producto",
+                      edit: "Editar producto",
+                      delete: "Eliminar producto",
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
