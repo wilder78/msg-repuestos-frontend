@@ -12,7 +12,7 @@ import GestionPermisos from "./pages/Permits/GestionPermisos";
 import GestionProveedor from "./pages/Suppliers/GestionProveedor";
 import GestionCategorias from "./pages/Category/GestionCategorias";
 import GestionProductos from "./pages/Products/GestionProductos";
-
+import GestionRutas from "./pages/FollowUp/GestionRutas";
 
 export default function App() {
   return (
@@ -53,6 +53,20 @@ export default function App() {
       <Route
         path="/zonas"
         element={<Navigate to="/dashboard/zonas" replace />}
+      />
+
+      {/* Gestión de Rutas */}
+      <Route
+        path="/dashboard/rutas"
+        element={
+          <DashboardLayout>
+            <GestionRutas />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/rutas"
+        element={<Navigate to="/dashboard/rutas" replace />}
       />
 
       {/* Gestión de Roles */}

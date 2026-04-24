@@ -13,6 +13,7 @@ const StatusToggleButton = ({
   authFetch,
   disabled = false,
   fieldName = "idEstado",
+  customBody = null,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -34,9 +35,13 @@ const StatusToggleButton = ({
       const base = apiUrl.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
       const url = `${base}/${id}`;
 
+      const bodyPayload = customBody 
+        ? { ...customBody, [fieldName]: nextStatus }
+        : { [fieldName]: nextStatus };
+
       const res = await authFetch(url, {
         method: "PUT",
-        body: JSON.stringify({ [fieldName]: nextStatus }),
+        body: JSON.stringify(bodyPayload),
       });
 
       if (res.ok) {
