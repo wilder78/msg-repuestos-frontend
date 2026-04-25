@@ -22,7 +22,7 @@ const UserCreateModal = ({
   onSubmit,
   loading,
   listaRoles,
-  onSaveSuccess, // ✅ NUEVA PROP
+  onSaveSuccess,
 }) => {
   const fileRef = useRef(null);
   const [preview, setPreview] = useState(null);

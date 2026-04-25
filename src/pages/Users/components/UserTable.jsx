@@ -115,6 +115,7 @@ const UserTable = ({
                 authFetch={authFetch}
                 disabled={u.idUsuario === 1} 
                 fieldName="idEstado"
+                customBody={u}
               />
             </TableCell>
             <TableCell className="text-right pr-6">
