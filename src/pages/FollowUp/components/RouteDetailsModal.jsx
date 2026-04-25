@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "../../../components/ui/dialog";
 import { Separator } from "../../../components/ui/separator";
-import { Map, MapPin, Calendar, Activity, User, Truck, Clock } from "lucide-react";
+import { Map, MapPin, Calendar, Activity, User, Truck, Clock, Users } from "lucide-react";
 import InfoCard from "../../Users/components/InfoCard";
 import StatusBadge from "../../../components/shared/StatusBadge";
 
@@ -164,6 +164,30 @@ const RouteDetailsModal = ({ isOpen, onClose, route }) => {
                 </p>
               </div>
             </InfoCard>
+
+            {/* Clientes Asignados */}
+            <div className="col-span-2">
+              <InfoCard icon={Users} iconColor="blue" title="Clientes a Visitar">
+                {route.detalles && route.detalles.length > 0 ? (
+                  <div className="space-y-2 mt-2 max-h-[150px] overflow-y-auto pr-1">
+                    {route.detalles.map((det, idx) => (
+                      <div key={det.idCliente || idx} className="flex items-center justify-between p-2 rounded-lg border border-slate-100 bg-white shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-xs flex items-center justify-center font-bold shrink-0">
+                            {idx + 1}
+                          </div>
+                          <span className="text-sm font-medium text-slate-700">
+                            {det.cliente?.razonSocial || det.nombreCliente || `Cliente #${det.idCliente}`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic mt-2">No hay clientes asignados a esta ruta.</p>
+                )}
+              </InfoCard>
+            </div>
           </div>
         </div>
       </DialogContent>

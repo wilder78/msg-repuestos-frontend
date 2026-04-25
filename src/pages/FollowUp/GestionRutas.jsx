@@ -10,6 +10,7 @@ import RouteTable from "./components/RouteTable";
 import RouteDetailsModal from "./components/RouteDetailsModal";
 import RouteCreateModal from "./components/RouteCreateModal";
 import RouteEditModal from "./components/RouteEditModal";
+import RouteDeleteModal from "./components/RouteDeleteModal";
 import SuccessToast from "../../components/ui/SuccessToast";
 
 const GestionRutas = () => {
@@ -40,16 +41,21 @@ const GestionRutas = () => {
     fechaPlanificada: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
   const [zonas, setZonas] = useState([]);
   const [empleados, setEmpleados] = useState([]);
+  const [clientes, setClientes] = useState([]);
 
-  // Fetch Zonas and Empleados on mount
+  // Fetch Zonas, Empleados and Clientes on mount
   useEffect(() => {
     const fetchDependencies = async () => {
       try {
-        const [resZonas, resEmpleados] = await Promise.all([
+        const [resZonas, resEmpleados, resClientes] = await Promise.all([
           authFetch("http://localhost:8080/api/zonas"),
           authFetch("http://localhost:8080/api/employees"),
+          authFetch("http://localhost:8080/api/customers"),
         ]);
         if (resZonas.ok) {
           const data = await resZonas.json();
@@ -68,6 +74,16 @@ const GestionRutas = () => {
           }));
 
           setEmpleados(filteredEmpleados);
+        }
+        if (resClientes.ok) {
+          const data = await resClientes.json();
+          const clientsList = data.data || data.customers || data.content || data || [];
+          // Normalizar IDs
+          const normalizedClients = clientsList.map(c => ({
+            ...c,
+            idCliente: c.idCliente || c.id_cliente || c.id || c.idCustomer
+          }));
+          setClientes(normalizedClients);
         }
       } catch (err) {
         console.error("Error fetching dependencies:", err);
@@ -157,7 +173,36 @@ const GestionRutas = () => {
   };
 
   const handleDelete = (route) => {
-    showToast("Eliminar Ruta", `Eliminar la ruta: ${route.nombreRuta || "Sin nombre"}`);
+    setDeleteError(null);
+    toggleModal("delete", true, route);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedRoute) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await authFetch(`http://localhost:8080/api/rutas/${selectedRoute.idRuta}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "No se puede eliminar la ruta debido a dependencias (ej. visitas asignadas).");
+      }
+
+      showToast("Ruta Eliminada", `La ruta ${selectedRoute.nombreRuta || "sin nombre"} fue eliminada.`);
+      toggleModal("delete", false);
+      await refresh();
+    } catch (err) {
+      console.error("Error eliminando ruta:", err);
+      const errMsg = err.message || "Error al intentar eliminar la ruta.";
+      setDeleteError(errMsg);
+      showToast("Error de Eliminación", errMsg);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // ─── Filtrado y Paginación ────────────────────────────────────────────────
@@ -235,6 +280,7 @@ const GestionRutas = () => {
         loading={isSaving}
         listaZonas={zonas}
         listaEmpleados={empleados}
+        listaClientes={clientes}
         onSaveSuccess={(name) => showToast("Ruta Creada", `La ruta ${name} fue registrada con éxito.`)}
       />
 
@@ -244,11 +290,24 @@ const GestionRutas = () => {
         route={selectedRoute}
         listaZonas={zonas}
         listaEmpleados={empleados}
+        listaClientes={clientes}
         authFetch={authFetch}
         onSaveSuccess={async (name) => {
           showToast("Ruta Editada", `La ruta ${name} fue actualizada con éxito.`);
           await refresh();
         }}
+      />
+
+      <RouteDeleteModal
+        isOpen={modals.delete}
+        onClose={() => {
+          toggleModal("delete", false);
+          setDeleteError(null);
+        }}
+        route={selectedRoute}
+        onConfirm={handleDeleteConfirm}
+        loading={isDeleting}
+        error={deleteError}
       />
     </div>
   );

@@ -113,7 +113,7 @@ const RouteTable = ({
                   apiUrl="http://localhost:8080/api/rutas"
                   onSuccess={onToggleStatus}
                   authFetch={authFetch}
-                  fieldName="idEstado"
+                  fieldName="idEstadoRuta"
                   customBody={r}
                 />
               </TableCell>
