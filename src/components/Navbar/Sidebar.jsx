@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   ChevronRight,
   ChevronLeft,
-  Key, // ✅ IMPORTACIÓN AGREGADA AQUÍ
+  Key, 
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -119,8 +119,12 @@ export function Sidebar({ className }) {
 
       <div className={cn("p-6 mb-2", isCollapsed ? "px-4" : "px-6")}>
         <div className="flex items-center gap-3">
-          <div className="h-10 min-w-[40px] rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-blue-200 shadow-lg">
-            MSG
+          <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-white shadow-sm border border-slate-100 overflow-hidden">
+            <img 
+              src="/imagen/logocuadrado.png" 
+              alt="MSG Logo" 
+              className="h-full w-full object-cover scale-[1.35]"
+            />
           </div>
           {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap">
@@ -128,7 +132,7 @@ export function Sidebar({ className }) {
                 MSG Repuestos
               </h1>
               <p className="text-xs text-slate-400 mt-1">
-                Repuestos y Servicios
+                Repuestos y Accesorios
               </p>
             </div>
           )}

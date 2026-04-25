@@ -1,8 +1,14 @@
 // En src/components/Navbar/components/Logo.jsx
+import { Link } from "react-router-dom";
+
 export const Logo = () => (
-  <div className="flex items-center">
-    <span className="text-lg sm:text-2xl font-black text-blue-600 tracking-tight whitespace-nowrap">
-      MSG<span className="text-gray-800">-Repuestos</span>
-    </span>
-  </div>
+  <Link to="/" className="flex items-center">
+    <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full overflow-hidden shadow-sm border-2 border-white flex items-center justify-center bg-white">
+      <img 
+        src="/imagen/logocuadrado.png" 
+        alt="MSG Repuestos" 
+        className="h-full w-full object-cover scale-[1.35]"
+      />
+    </div>
+  </Link>
 );
