@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Map } from "lucide-react";
+import { Route } from "lucide-react";
 
 import { useRoutes } from "../../hooks/useRoutes";
 import PageHeader from "../../components/shared/PageHeader";
@@ -230,7 +230,7 @@ const GestionRutas = () => {
       <SuccessToast {...toastConfig} onClose={() => setToastConfig((p) => ({ ...p, visible: false }))} />
 
       <PageHeader
-        icon={Map}
+        icon={Route}
         title="Gestión de Rutas"
         subtitle="Panel administrativo MSG Repuestos"
         buttonText="Crear Ruta"

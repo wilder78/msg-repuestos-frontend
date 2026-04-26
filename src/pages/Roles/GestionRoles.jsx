@@ -12,7 +12,7 @@ import TablePagination from "../../components/shared/TablePagination";
 import SuccessToast from "../../components/ui/SuccessToast";
 
 const GestionRoles = () => {
-  const { roles, setRoles, loading, refresh, authFetch } = useRoles();
+  const { roles, setRoles, loading, error, refresh, authFetch } = useRoles();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rolesPerPage = 8;
@@ -257,6 +257,18 @@ const GestionRoles = () => {
         buttonText="Crear Nuevo Rol"
         onButtonClick={() => setIsCreateOpen(true)}
       />
+
+      {error && !loading && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-5 py-3 rounded-lg flex items-center justify-between text-sm font-medium">
+          <span>⚠️ {error}</span>
+          <button
+            onClick={refresh}
+            className="ml-4 text-red-600 underline hover:text-red-800"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
         <TableToolbar

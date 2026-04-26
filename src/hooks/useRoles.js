@@ -18,6 +18,7 @@ const authFetch = (url, options = {}) => {
 export const useRoles = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchRolesData = useCallback(async () => {
     setLoading(true);
@@ -27,7 +28,13 @@ export const useRoles = () => {
         authFetch("http://localhost:8080/api/role-permissions/"),
       ]);
 
+      if (resRoles.status === 401 || resPerms.status === 401) {
+        setError("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        return;
+      }
       if (!resRoles.ok || !resPerms.ok) throw new Error("Error en el servidor");
+      
+      setError(null);
 
       const dataRoles = await resRoles.json();
       const dataPerms = await resPerms.json();
@@ -78,6 +85,7 @@ export const useRoles = () => {
       setRoles(formattedRoles);
     } catch (err) {
       console.error("Error al sincronizar datos:", err);
+      setError("No se pudo conectar con el servidor.");
     } finally {
       setLoading(false);
     }
@@ -88,5 +96,5 @@ export const useRoles = () => {
   }, [fetchRolesData]);
 
   // ✅ setRoles y authFetch expuestos para actualizaciones
-  return { roles, setRoles, loading, refresh: fetchRolesData, authFetch };
+  return { roles, setRoles, loading, error, refresh: fetchRolesData, authFetch };
 };
